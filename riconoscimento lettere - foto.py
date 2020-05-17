@@ -66,7 +66,7 @@ def thresh_callback(val):
     cv.imshow('Contours', drawing)
 
 # Load source image
-src = cv.imread("ciao.jpg")
+src = cv.imread("foto/ciao.jpg")
 src = cv.resize(src, (960, 540))
 
 # Convert image to gray and blur it
