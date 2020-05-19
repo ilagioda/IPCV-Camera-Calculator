@@ -79,17 +79,18 @@ def is_inside_outside(rettangoli, min_x, min_y, max_x, max_y):
 
         rettangoli.append([min_x, min_y, max_x, max_y])
         return 0
+    
 
-def estrai_elemento(image, start_point, end_point, num_elem):
+def extract_element(image, start_point, end_point, num_elem):
     num_elem += 1
     image = bgr_to_rgb(image)
     elem = image[start_point[1]:end_point[1], start_point[0]:end_point[0]]
     print("shape: {}x{} - start (min_x, min_y): {} {} - end (max_x, max_y): {} {}".format(image.shape[0], image.shape[1], start_point[0], start_point[1], end_point[0], end_point[1]))
-    nome = "digits/elem" + str(num_elem) + ".jpg"
-    cv.imwrite(nome, elem)
+    name = "digits/elem" + str(num_elem) + ".jpg"
+    cv.imwrite(name, elem)
 
 
-def riconosci_cifre(image):
+def detect_simbols(image):
     num_elem = 0
     # Convert image to gray and blur it
     image_gray = bgr_to_gray(image)
@@ -165,7 +166,7 @@ def riconosci_cifre(image):
             # Draw the rectangle around the letter
             drawing = cv.rectangle(drawing, start_point, end_point, color, thickness)
             # Crop the element from the image
-            estrai_elemento(image, start_point, end_point, num_elem)
+            extract_element(image, start_point, end_point, num_elem)
             num_elem += 1
 
     # Show everything in a window
@@ -202,7 +203,7 @@ def main():
         if cont == stop_cont:
             #final = bgr_to_rgb(frame)
             #cv.imshow("Ultimo frame", final)
-            riconosci_cifre(frame)
+            detect_simbols(frame)
 
         if ax_img is None:
             # Convert the current (first) frame in hsv (NOTA: necessario hsv perchè la funzione cv.inRange accetta quella scala)
