@@ -6,6 +6,7 @@ import sys
 
 rng.seed(12345)
 
+
 def grab_frame(cap):
     """
     Method to grab a frame from the camera
@@ -14,15 +15,6 @@ def grab_frame(cap):
     """
     ret, frame = cap.read()
     return frame
-
-
-def handle_close(event, cap):
-    """
-    Handle the close event of the Matplotlib window by closing the camera capture
-    :param event: the close event
-    :param cap: the VideoCapture object to be closed
-    """
-    cap.release()
 
 
 def bgr_to_rgb(image):
@@ -52,52 +44,73 @@ def bgr_to_gray(image):
     return cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
 
-def is_inside_outside(rettangoli, min_x, min_y, max_x, max_y):
-    # Controllo se la lista rettangoli è vuota
-    if not rettangoli:
-        rettangoli.append([min_x, min_y, max_x, max_y])
+def is_inside_outside(new_rect, rectangles):
+    # Handle the case of an empty rectangles list
+    if not rectangles:
         return 0
     else:
-        for rett in rettangoli:
-            x0 = rett[0]
-            y0 = rett[1]
-            x1 = rett[2]
-            y1 = rett[3]
-            #print("Rett... x0 = {}, y0 = {}, x1 = {}, y1 = {}".format(x0, y0, x1, y1))
+        min_x = new_rect[0]
+        min_y = new_rect[1]
+        max_x = new_rect[2]
+        max_y = new_rect[3]
 
-            # Controllo se rett è incluso nel nuovo rettangolo
+        for rect in rectangles:
+            x0 = rect[0]
+            y0 = rect[1]
+            x1 = rect[2]
+            y1 = rect[3]
+
+            # Check if rect is completely included in the new rectangle
             if min_x <= x0 and min_y <= y0 and x1 <= max_x and y1 <= max_y:
-                rettangoli.append([min_x, min_y, max_x, max_y])
-                rettangoli.remove(rett)
+                rectangles.remove(rect)
                 return 2
 
-            # Controllo se il nuovo rettangolo è incluso in rett
+            # Check if the new rectangle is completely included in rect
             if x0 <= min_x and y0 <= min_y and max_x <= x1 and max_y <= y1:
                 return 1
-            if x0 == min_x and y0 == min_y and max_x == x1 and max_y == y1:
-                return 1
 
-        rettangoli.append([min_x, min_y, max_x, max_y])
         return 0
     
 
 def extract_element(image, start_point, end_point, num_elem):
-    num_elem += 1
     image = bgr_to_rgb(image)
     elem = image[start_point[1]:end_point[1], start_point[0]:end_point[0]]
-    print("shape: {}x{} - start (min_x, min_y): {} {} - end (max_x, max_y): {} {}".format(image.shape[0], image.shape[1], start_point[0], start_point[1], end_point[0], end_point[1]))
-    name = "digits/elem" + str(num_elem) + ".jpg"
+    print("shape: {}x{} - start (min_x, min_y): {} {} - end (max_x, max_y): {} {}"
+          .format(image.shape[0], image.shape[1], start_point[0], start_point[1], end_point[0], end_point[1]))
+    name = "digits/elem" + str(num_elem + 1) + ".jpg"
     cv.imwrite(name, elem)
 
 
-def detect_simbols(image):
-    num_elem = 0
+def try_blend_vertical(new_rect, rectangles):
+    # Handle the case of an empty rectangles list
+    if not rectangles:
+        return new_rect
+    else:
+        min_x = new_rect[0]
+        min_y = new_rect[1]
+        max_x = new_rect[2]
+        max_y = new_rect[3]
+
+        for rect in rectangles:
+            x0 = rect[0]
+            y0 = rect[1]
+            x1 = rect[2]
+            y1 = rect[3]
+
+            # If rect is vertically aligned (but separated) w.r.t. the new rectangle
+            if (x0 < max_x and x1 > min_x) and (y0 > max_y or y1 < min_y):
+                # Remove rect from the list and return a new rectangle obtained by merging the 2
+                rectangles.remove(rett)
+                new_rect = [min(x0, min_x), min(y0, min_y), max(x1, max_x), max(y1, max_y)]
+
+        return new_rect
+
+
+def detect_symbols(image):
+
     # Convert image to gray and blur it
     image_gray = bgr_to_gray(image)
     image_gray = cv.blur(image_gray, (3, 3))
-
-    # Build a vector to maintain the already-found-rectangles' dimensions
-    rettangoli = []
 
     # Detect edges using Canny
     threshold = 30
@@ -116,6 +129,7 @@ def detect_simbols(image):
 
     # Find the convex hull and the rectangle for each contour
     hull_list = []
+    rectangles = []
     for i in range(len(contours)):
         # Find the convex hull
         hull = cv.convexHull(contours[i])
@@ -141,33 +155,47 @@ def detect_simbols(image):
             if y > max_y:
                 max_y = y
         #print("min_x = {}, min_y = {}, max_x = {}, max_y = {}".format(min_x, min_y, max_x, max_y))
+        new_rect = [min_x, min_y, max_x, max_y]
+
+        # Blend rectangles if they are vertically aligned
+        # The rectangle is returned identical or merged with another one in the list (which is deleted)
+        new_rect = try_blend_vertical(new_rect, rectangles)
 
         '''
         Controllo se il rettangolo appena trovato è incluso in un altro rettangolo oppure se un altro rettangolo è
         incluso in esso
         esito = 0 --> tutto ok, i due rettangoli non si includono a vicenda
-                  --> stampo a video tale rettangolo appena identificato
+                  --> viene mantenuto il rettangolo appena identificato
         esito = 1 --> il rettangolo appena identificato è incluso in un altro rettangolo più grande già identificato
-                  --> non stampo a video tale rettangolo appena identificato
+                  --> viene scartato il rettangolo appena identificato
         esito = 2 --> il rettangolo appena identificato comprende un rettangolo più piccolo già identificato
-                  --> stampo a video tale rettangolo appena identificato
+                  --> viene mantenuto il rettangolo appena identificato (è stato eliminato il precedente)
         '''
-        esito = is_inside_outside(rettangoli, min_x, min_y, max_x, max_y)
+        esito = is_inside_outside(new_rect, rectangles)
         # print("esito: {}".format(esito))
         if esito == 0 or esito == 2:
-            # Start coordinate, represents the top left corner of rectangle
-            start_point = (min_x, min_y)
-            # Ending coordinate, represents the bottom right corner of rectangle
-            end_point = (max_x, max_y)
-            # Blue color in BGR
-            color = (255, 0, 0)
-            # Line thickness of 2 px
-            thickness = 2
-            # Draw the rectangle around the letter
-            drawing = cv.rectangle(drawing, start_point, end_point, color, thickness)
-            # Crop the element from the image
-            extract_element(image, start_point, end_point, num_elem)
-            num_elem += 1
+            rectangles.append(new_rect)
+
+    # Process the final rectangle list
+    num_elem = 0
+    for rett in rectangles:
+        min_x = rett[0]
+        min_y = rett[1]
+        max_x = rett[2]
+        max_y = rett[3]
+        # Start coordinate, represents the top left corner of rectangle
+        start_point = (min_x, min_y)
+        # Ending coordinate, represents the bottom right corner of rectangle
+        end_point = (max_x, max_y)
+        # Blue color in BGR
+        color = (255, 0, 0)
+        # Line thickness of 2 px
+        thickness = 2
+        # Draw the rectangle around the letter
+        drawing = cv.rectangle(drawing, start_point, end_point, color, thickness)
+        # Crop the element from the image
+        extract_element(image, start_point, end_point, num_elem)
+        num_elem += 1
 
     # Show everything in a window
     cv.imshow('Rettangoli attorno alle cifre', drawing)
@@ -182,7 +210,7 @@ def main():
 
     # Create a figure to be updated
     fig = plt.figure()
-    fig.canvas.mpl_connect("close_event", lambda event: handle_close(event, cap))
+    fig.canvas.mpl_connect("close_event", lambda event: cap.release())
 
     # Prep a variable for the first run
     ax_img = None
@@ -203,7 +231,7 @@ def main():
         if cont == stop_cont:
             #final = bgr_to_rgb(frame)
             #cv.imshow("Ultimo frame", final)
-            detect_simbols(frame)
+            detect_symbols(frame)
 
         if ax_img is None:
             # Convert the current (first) frame in hsv (NOTA: necessario hsv perchè la funzione cv.inRange accetta quella scala)
@@ -249,7 +277,7 @@ def main():
             for contour in contours:
                 flag = 1
                 area = cv.contourArea(contour)
-                if (area > 800):
+                if area > 800:
                     # Yellow object found
                     cont = 0
                     x, y, w, h = cv.boundingRect(contour)
@@ -261,6 +289,7 @@ def main():
             ax_img.set_data(bgr_to_rgb(frame))
             fig.canvas.draw()
             plt.pause(pause_time)
+
 
 if __name__ == "__main__":
     try:
