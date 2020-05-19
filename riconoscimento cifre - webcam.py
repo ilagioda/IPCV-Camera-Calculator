@@ -63,7 +63,6 @@ def is_inside_outside(rettangoli, min_x, min_y, max_x, max_y):
             y0 = rett[1]
             x1 = rett[2]
             y1 = rett[3]
-
             #print("Rett... x0 = {}, y0 = {}, x1 = {}, y1 = {}".format(x0, y0, x1, y1))
 
             # Controllo se rett è incluso nel nuovo rettangolo
@@ -75,12 +74,23 @@ def is_inside_outside(rettangoli, min_x, min_y, max_x, max_y):
             # Controllo se il nuovo rettangolo è incluso in rett
             if x0 <= min_x and y0 <= min_y and max_x <= x1 and max_y <= y1:
                 return 1
+            if x0 == min_x and y0 == min_y and max_x == x1 and max_y == y1:
+                return 1
 
         rettangoli.append([min_x, min_y, max_x, max_y])
         return 0
 
+def estrai_elemento(image, start_point, end_point, num_elem):
+    num_elem += 1
+    image = bgr_to_rgb(image)
+    elem = image[start_point[1]:end_point[1], start_point[0]:end_point[0]]
+    print("shape: {}x{} - start (min_x, min_y): {} {} - end (max_x, max_y): {} {}".format(image.shape[0], image.shape[1], start_point[0], start_point[1], end_point[0], end_point[1]))
+    nome = "digits/elem" + str(num_elem) + ".jpg"
+    cv.imwrite(nome, elem)
+
 
 def riconosci_cifre(image):
+    num_elem = 0
     # Convert image to gray and blur it
     image_gray = bgr_to_gray(image)
     image_gray = cv.blur(image_gray, (3, 3))
@@ -129,7 +139,7 @@ def riconosci_cifre(image):
                 max_x = x
             if y > max_y:
                 max_y = y
-        print("min_x = {}, min_y = {}, max_x = {}, max_y = {}".format(min_x, min_y, max_x, max_y))
+        #print("min_x = {}, min_y = {}, max_x = {}, max_y = {}".format(min_x, min_y, max_x, max_y))
 
         '''
         Controllo se il rettangolo appena trovato è incluso in un altro rettangolo oppure se un altro rettangolo è
@@ -154,6 +164,9 @@ def riconosci_cifre(image):
             thickness = 2
             # Draw the rectangle around the letter
             drawing = cv.rectangle(drawing, start_point, end_point, color, thickness)
+            # Crop the element from the image
+            estrai_elemento(image, start_point, end_point, num_elem)
+            num_elem += 1
 
     # Show everything in a window
     cv.imshow('Rettangoli attorno alle cifre', drawing)
