@@ -81,6 +81,46 @@ def extract_element(image, start_point, end_point, num_elem):
     cv.imwrite(name, elem)
 
 
+def try_blend_intersected(new_rect, rectangles):
+    # Handle the case of an empty rectangles list
+    if not rectangles:
+        return new_rect
+    else:
+        min_x = new_rect[0]
+        min_y = new_rect[1]
+        max_x = new_rect[2]
+        max_y = new_rect[3]
+
+        for rect in rectangles:
+            x0 = rect[0]
+            y0 = rect[1]
+            x1 = rect[2]
+            y1 = rect[3]
+
+            # Calculate the area of the intersection between rect and new_rect
+            intersection_area = 0
+            dx = min(max_x, x1) - max(min_x, x0)
+            dy = min(max_y, y1) - max(min_y, y0)
+            if (dx >= 0) and (dy >= 0):
+                intersection_area = dx * dy
+
+            factor = 0.8    # 80%
+
+            # If the 2 rectangles are heavily overlapped, merge them together
+            area_rect = (x1 - x0) * (y1 - y0)
+            area_new_rect = (max_x - min_x) * (max_y - min_y)
+            if (intersection_area >= factor * area_rect) or intersection_area >= factor * area_new_rect:
+                rectangles.remove(rect)
+                new_rect = [min(x0, min_x), min(y0, min_y), max(x1, max_x), max(y1, max_y)]
+                # The rectangle has changed and therefore update the coordinates
+                min_x = new_rect[0]
+                min_y = new_rect[1]
+                max_x = new_rect[2]
+                max_y = new_rect[3]
+
+        return new_rect
+
+
 def try_blend_vertical(new_rect, rectangles):
     # Handle the case of an empty rectangles list
     if not rectangles:
@@ -100,15 +140,20 @@ def try_blend_vertical(new_rect, rectangles):
             # If rect is vertically aligned (but separated) w.r.t. the new rectangle
             if (x0 < max_x and x1 > min_x) and (y0 > max_y or y1 < min_y):
                 # Remove rect from the list and return a new rectangle obtained by merging the 2
-                rectangles.remove(rett)
+                rectangles.remove(rect)
                 new_rect = [min(x0, min_x), min(y0, min_y), max(x1, max_x), max(y1, max_y)]
+                # The rectangle has changed and therefore update the coordinates
+                min_x = new_rect[0]
+                min_y = new_rect[1]
+                max_x = new_rect[2]
+                max_y = new_rect[3]
 
         return new_rect
 
 
 def detect_symbols(image):
 
-    # Convert image to gray and blur it
+    # Convert image to gray and apply blur
     image_gray = bgr_to_gray(image)
     image_gray = cv.blur(image_gray, (3, 3))
 
@@ -136,30 +181,19 @@ def detect_symbols(image):
         hull_list.append(hull)
 
         # Find the coordinates of the rectangle containing the letter
-        min_x = sys.maxsize
-        min_y = sys.maxsize
-        max_x = -1
-        max_y = -1
-        for (num, vet) in enumerate(hull):
-            # print("num = {}, coord = {}".format(num, vet))
-            coord = vet[0]
-            x = coord[0]
-            y = coord[1]
-            # print("x = {}, y = {}".format(x, y))
-            if x < min_x:
-                min_x = x
-            if y < min_y:
-                min_y = y
-            if x > max_x:
-                max_x = x
-            if y > max_y:
-                max_y = y
-        #print("min_x = {}, min_y = {}, max_x = {}, max_y = {}".format(min_x, min_y, max_x, max_y))
-        new_rect = [min_x, min_y, max_x, max_y]
+        x, y, w, h = cv.boundingRect(contours[i])
+        new_rect = [x, y, x + w, y + h]
+
+        # Merge together rectangles that are heavily intersected (overlapped)
+        # The rectangle is returned identical or merged with another one in the list (which is deleted)
+        new_rect = try_blend_intersected(new_rect, rectangles)
 
         # Blend rectangles if they are vertically aligned
         # The rectangle is returned identical or merged with another one in the list (which is deleted)
         new_rect = try_blend_vertical(new_rect, rectangles)
+
+        # Add the processed rectangle to the list
+        rectangles.append(new_rect)
 
         '''
         Controllo se il rettangolo appena trovato è incluso in un altro rettangolo oppure se un altro rettangolo è
@@ -170,23 +204,20 @@ def detect_symbols(image):
                   --> viene scartato il rettangolo appena identificato
         esito = 2 --> il rettangolo appena identificato comprende un rettangolo più piccolo già identificato
                   --> viene mantenuto il rettangolo appena identificato (è stato eliminato il precedente)
-        '''
+                  
         esito = is_inside_outside(new_rect, rectangles)
         # print("esito: {}".format(esito))
         if esito == 0 or esito == 2:
             rectangles.append(new_rect)
+        '''
 
     # Process the final rectangle list
     num_elem = 0
-    for rett in rectangles:
-        min_x = rett[0]
-        min_y = rett[1]
-        max_x = rett[2]
-        max_y = rett[3]
+    for rect in rectangles:
         # Start coordinate, represents the top left corner of rectangle
-        start_point = (min_x, min_y)
+        start_point = (rect[0], rect[1])
         # Ending coordinate, represents the bottom right corner of rectangle
-        end_point = (max_x, max_y)
+        end_point = (rect[2], rect[3])
         # Blue color in BGR
         color = (255, 0, 0)
         # Line thickness of 2 px
@@ -203,7 +234,7 @@ def detect_symbols(image):
 
 def main():
     # Init the camera ---> 1 = WEBCAM ESTERNA!!!!
-    cap = cv.VideoCapture(1)
+    cap = cv.VideoCapture("video/fermo 3+4.mp4")
 
     # Enable Matplotlib interactive mode
     plt.ion()
@@ -215,7 +246,7 @@ def main():
     # Prep a variable for the first run
     ax_img = None
 
-    # Parametri miei
+    # Timer parameters
     cont = 0
     pause_time = 1/30       # pause: 30 frames per second
     stop_cont = 30
@@ -233,59 +264,36 @@ def main():
             #cv.imshow("Ultimo frame", final)
             detect_symbols(frame)
 
+        # Convert the current frame in HSV (note: needed by cv.inRange())
+        img = bgr_to_hsv(frame)
+
+        # Thresholding with the usage of a mask for detecting the yellow
+        lower_yellow = np.array([20, 110, 110])
+        upper_yellow = np.array([40, 255, 255])
+        mask = cv.inRange(img, lower_yellow, upper_yellow)
+
+        # Find contours of yellow objects
+        (contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        flag = 0
+        for contour in contours:
+            flag = 1
+            area = cv.contourArea(contour)
+            if area > 800:
+                # Yellow object found
+                cont = 0
+                x, y, w, h = cv.boundingRect(contour)
+                frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
+        if flag == 0:
+            # Yellow object not found
+            cont += 1
+
+        # Draw the frame in the viewport
         if ax_img is None:
-            # Convert the current (first) frame in hsv (NOTA: necessario hsv perchè la funzione cv.inRange accetta quella scala)
-            img = bgr_to_hsv(frame)
-
-            # Thresholding with the usage of a mask for detecting the yellow
-            lower_yellow = np.array([20, 110, 110])
-            upper_yellow = np.array([40, 255, 255])
-            mask = cv.inRange(img, lower_yellow, upper_yellow)
-
-            # Find contours of yellow objects
-            (contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-            flag = 0
-            for contour in contours:
-                flag = 1
-                area = cv.contourArea(contour)
-                if (area > 800):
-                    # Yellow object found
-                    cont = 0
-                    x, y, w, h = cv.boundingRect(contour)
-                    frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
-            if flag == 0:
-                # Yellow object not found
-                cont += 1
-
             ax_img = plt.imshow(bgr_to_rgb(frame))
             plt.axis("off")  # hide axis, ticks, ...
             plt.title("Camera Capture")
             plt.show()
-
         else:
-            # Convert the current frame in hsv (NOTA: necessario hsv perchè la funzione cv.inRange accetta quella scala)
-            img = bgr_to_hsv(frame)
-
-            # Thresholding with the usage of a mask for detecting the yellow
-            lower_yellow = np.array([20, 110, 110])
-            upper_yellow = np.array([40, 255, 255])
-            mask = cv.inRange(img, lower_yellow, upper_yellow)
-
-            # Find contours of yellow objects
-            (contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-            flag = 0
-            for contour in contours:
-                flag = 1
-                area = cv.contourArea(contour)
-                if area > 800:
-                    # Yellow object found
-                    cont = 0
-                    x, y, w, h = cv.boundingRect(contour)
-                    frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
-            if flag == 0:
-                # Yellow object not found
-                cont += 1
-
             ax_img.set_data(bgr_to_rgb(frame))
             fig.canvas.draw()
             plt.pause(pause_time)
