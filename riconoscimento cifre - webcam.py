@@ -14,6 +14,16 @@ def grab_frame(cap):
     :return: the captured image
     """
     ret, frame = cap.read()
+
+    if frame is not None:
+        height = frame.shape[0]
+        width = frame.shape[1]
+
+        # Resize the frame to 960x540 (preserve aspect ratio)
+        factor = min(960/width, 540/height)
+        new_size = (int(width * factor), int(height * factor))
+        frame = cv.resize(frame, new_size)
+
     return frame
 
 
@@ -247,7 +257,6 @@ def detect_symbols(image):
 
 def main():
     # Init the camera ---> 1 = WEBCAM ESTERNA!!!!
-    cap = cv.VideoCapture("video/matita 3+4 .mp4")
 
     # Enable Matplotlib interactive mode
     plt.ion()
@@ -267,6 +276,8 @@ def main():
     while cap.isOpened():
         # Get the current frame
         frame = grab_frame(cap)
+        if frame is None:
+            break
 
         # Print cont
         print("Cont: {}".format(cont))
