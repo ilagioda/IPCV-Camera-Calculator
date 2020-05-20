@@ -153,8 +153,21 @@ def try_blend_vertical(new_rect, rectangles):
 
 def detect_symbols(image):
 
-    # Convert image to gray and apply blur
+    kernel = np.array(
+        [[0, 1, 1, 1, 0],
+         [1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1],
+         [0, 1, 1, 1, 0]],
+        np.uint8)
+
+    # Convert image to gray and apply pre-processing
     image_gray = bgr_to_gray(image)
+
+    # Apply closing operator
+    image_gray = cv.morphologyEx(image_gray, cv.MORPH_OPEN, kernel)
+
+    # Apply blur
     image_gray = cv.blur(image_gray, (3, 3))
 
     # Detect edges using Canny
@@ -234,7 +247,7 @@ def detect_symbols(image):
 
 def main():
     # Init the camera ---> 1 = WEBCAM ESTERNA!!!!
-    cap = cv.VideoCapture("video/fermo 3+4.mp4")
+    cap = cv.VideoCapture("video/matita 3+4 .mp4")
 
     # Enable Matplotlib interactive mode
     plt.ion()
