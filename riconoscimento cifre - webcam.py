@@ -257,7 +257,7 @@ def detect_symbols(image):
 
 def main():
     # Init the camera ---> 1 = WEBCAM ESTERNA!!!!
-	cap = cv.VideoCapture(1)
+    cap = cv.VideoCapture(1)
 
     # Enable Matplotlib interactive mode
     plt.ion()
