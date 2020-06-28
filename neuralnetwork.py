@@ -1,15 +1,22 @@
 import cv2 as cv
-import matplotlib.pyplot as plt
 import numpy as np
-import sys
+import matplotlib.pyplot as plt
 import utils
 
+import torch
+import torch.nn as nn
+from torchvision import transforms
+from torchvision.models import alexnet
+
+NUM_CLASSES = 16
+NN_PATH = './symbols_net.pth'
+LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'div', 'equal', 'minus', 'mul', 'plus', 'separator']
 
 def prepare_image(image):
     """
     Image pre-processing, before running them through the neural network
     :param image: an RGB image of a symbol that has to be processed by the neural network
-    :return:
+    :return: preparred image
     """
     if image is None:
         return
@@ -62,3 +69,64 @@ def prepare_image(image):
     plt.subplot(1, 3, 3).axis('on')
     plt.imshow(image_prepared, 'gray')
     plt.title("Post-processed image")
+
+    return image_prepared
+
+
+def predict_symbol(img):
+    """
+    Given a certain image containing a symbol, allows to predict the class label, i.e.
+    the category to which the symbol belongs, through the usage of a pre-trained neural network (AlexNet)
+    :param img: an image containing a symbol
+    :return: predicted label, i.e. predicted symbol
+    """
+
+    # Define transforms for the prediction phase
+    eval_transform = transforms.Compose([transforms.Resize(224),                                 # Resizes short size of the PIL image to 256
+                                         transforms.ToTensor(),                                  # Turn PIL Image to torch.Tensor
+                                         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # Normalizes tensor with mean and standard deviation
+                                         ])
+
+    # Define a new model
+    net = alexnet()
+
+    # Change the last layer of AlexNet to output 16 classes
+    net.classifier[6] = nn.Linear(4096, NUM_CLASSES)
+
+    # Load the already-trained model
+    net.load_state_dict(torch.load(NN_PATH))
+
+    # Set the evaluation mode
+    net.eval()
+
+    # Prepare the image for the network
+    img = eval_transform(img).float()
+    img = img.unsqueeze(0)
+
+    # Forward the image through the network
+    outputs = net(img)
+
+    # Get prediction (index in the LABELS array)
+    pred = torch.argmax(outputs)
+    print("Predicted index --> {}".format(pred))
+
+    # Retrieve the predicted label from the LABELS array
+    label = LABELS[pred]
+    print("Predicted label --> {}".format(label))
+
+    if label == 'div':
+        fixed_label = '/'
+    elif label == 'equal':
+        fixed_label = '='
+    elif label == 'minus':
+        fixed_label = '-'
+    elif label == 'mul':
+        fixed_label = '*'
+    elif label == 'plus':
+        fixed_label = '+'
+    elif label == 'separator':
+        fixed_label = '.'
+    else:
+        fixed_label = label
+
+    return fixed_label

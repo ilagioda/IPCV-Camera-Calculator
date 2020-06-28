@@ -5,7 +5,7 @@ import random
 import sys
 import utils
 import neuralnetwork as net
-
+import calculator
 
 def grab_frame(cap):
     """
@@ -204,7 +204,8 @@ def main():
     # Initialize the random number generator
     random.seed(12345)
 
-    # Init the camera ---> 1 = WEBCAM ESTERNA!!!!
+    # Init the camera
+    #cap = cv.VideoCapture(1) ---> 1 = WEBCAM ESTERNA!!!!
     cap = cv.VideoCapture("video/matita 17+65.mp4")
 
     # Enable Matplotlib interactive mode
@@ -222,6 +223,9 @@ def main():
     pause_time = 1 / 30  # pause: 30 frames per second
     stop_cont = 30
 
+    # Initialize the array that will contain the predicted symbols
+    predicted = []
+
     while cap.isOpened():
         # Get the current frame
         frame = grab_frame(cap)
@@ -237,12 +241,25 @@ def main():
             symbols = detect_symbols(frame)
 
             if symbols:
-                net.prepare_image(symbols[0])
+                for s in symbols:
+                    # Prepare the image
+                    prepared_symbol = net.prepare_image(s)       # TODO: prepare_image da rivedere?? funziona correttamente??
 
-            # TODO: pass symbols to the neural network for classification,
-            #       build the math expression by appending the results of the NN
-            #       one by one and finally call the solver to get the result and
-            #       show it to the user
+                    # Predict the class label
+                    predicted_symbol = net.predict_symbol(prepared_symbol)
+
+                    # Append the prediction to the array of predicted symbols
+                    predicted.append(predicted_symbol)
+
+                    # TODO: pass symbols to the neural network for classification (DONE),
+                    #       build the math expression by appending the results of the NN
+                    #       one by one (DONE) and finally call the solver to get the result and
+                    #       show it to the user (TO DO)
+
+                # Do the computation
+                result = calculator.compute(predicted)          # TODO: da implementare
+
+                # TODO: show 'result' to the user
 
         # Convert the current frame in HSV (note: needed by cv.inRange())
         img = utils.bgr_to_hsv(frame)
