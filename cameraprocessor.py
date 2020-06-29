@@ -243,7 +243,7 @@ def main():
             if symbols:
                 for s in symbols:
                     # Prepare the image
-                    prepared_symbol = net.prepare_image(s)       # TODO: prepare_image da rivedere?? funziona correttamente??
+                    prepared_symbol = net.prepare_image(s)
 
                     # Predict the class label
                     predicted_symbol = net.predict_symbol(prepared_symbol)
