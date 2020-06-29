@@ -1,6 +1,9 @@
 # Custom folders
 video/phone-videos/
 
+# PyCharm project folders
+.idea/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
