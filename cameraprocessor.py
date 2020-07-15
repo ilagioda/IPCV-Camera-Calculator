@@ -257,9 +257,12 @@ def main():
                     #       show it to the user (TO DO)
 
                 # Do the computation
-                result = calculator.compute(predicted)          # TODO: da implementare
+                #result = calculator.compute(predicted)          # TODO: da implementare
 
                 # TODO: show 'result' to the user
+                print("Simboli riconosciuti:")
+                for p in predicted:
+                    print("\t {}".format(p))
 
         # Convert the current frame in HSV (note: needed by cv.inRange())
         img = utils.bgr_to_hsv(frame)
