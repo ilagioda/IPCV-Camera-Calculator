@@ -23,9 +23,11 @@ def prepare_image(image):
     if image is None:
         return
 
+    """
     plt.subplot(1, 3, 1)
     plt.imshow(image)
     plt.title("Input image")
+    """
 
     # Convert to grayscale
     img_gray = utils.rgb_to_gray(image)
@@ -44,9 +46,11 @@ def prepare_image(image):
     # Apply thresholding to the image, separating the background from the symbol
     thresh = cv.adaptiveThreshold(img_gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 2)
 
+    """
     plt.subplot(1, 3, 2)
     plt.imshow(thresh, 'gray')
     plt.title("Thresholded image")
+    """
 
     # Define a kernel for morphological operations
     kernel = np.array(
@@ -65,11 +69,13 @@ def prepare_image(image):
     # Write the thresholded image on the white-filled 64x64 canvas
     y_start = 32-np.uint(height/2)
     x_start = 32-np.uint(width/2)
-    image_prepared[y_start:y_start + height, x_start:x_start + width] = thresh
+    image_prepared[int(y_start):int(y_start + height), int(x_start):int(x_start + width)] = thresh
 
+    """
     plt.subplot(1, 3, 3)
     plt.imshow(image_prepared, 'gray')
     plt.title("Post-processed image")
+    """
 
     return image_prepared
 
