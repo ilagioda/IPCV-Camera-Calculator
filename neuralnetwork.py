@@ -8,6 +8,8 @@ import torch.nn as nn
 from torchvision import transforms
 from torchvision.models import alexnet
 
+from PIL import Image
+
 NUM_CLASSES = 16
 NN_PATH = './symbols_net.pth'
 LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'div', 'equal', 'minus', 'mul', 'plus', 'separator']
@@ -72,13 +74,17 @@ def prepare_image(image):
     return image_prepared
 
 
-def predict_symbol(img):
+def predict_symbol(img_cv):
     """
     Given a certain image containing a symbol, allows to predict the class label, i.e.
     the category to which the symbol belongs, through the usage of a pre-trained neural network (AlexNet)
     :param img: an image containing a symbol
     :return: predicted label, i.e. predicted symbol
     """
+
+    # Convert into PIL format
+    img_cv = cv.cvtColor(img_cv, cv.COLOR_BGR2RGB)
+    img = Image.fromarray(img_cv).convert("RGB")
 
     # Define transforms for the prediction phase
     eval_transform = transforms.Compose([transforms.Resize(224),                                 # Resizes short size of the PIL image to 256

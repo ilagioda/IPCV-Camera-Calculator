@@ -193,7 +193,7 @@ def detect_symbols(image):
             symbols.append(elem)
 
     # Show everything in a window
-    cv.imshow('Detection results', drawing)
+    #cv.imshow('Detection results', drawing)        # TODO: commentato solo perchè Colab è stupido
 
     # Return list of extracted symbols
     return symbols
@@ -263,6 +263,9 @@ def main():
                 print("Simboli riconosciuti:")
                 for p in predicted:
                     print("\t {}".format(p))
+
+                # End the "cap.isOpened" while
+                break
 
         # Convert the current frame in HSV (note: needed by cv.inRange())
         img = utils.bgr_to_hsv(frame)
