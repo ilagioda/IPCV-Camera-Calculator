@@ -11,7 +11,7 @@ from torchvision.models import alexnet
 from PIL import Image
 
 NUM_CLASSES = 16
-NN_PATH = './symbols_net.pth'
+NN_PATH = './augm_symbols_net.pth'
 LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'div', 'equal', 'minus', 'mul', 'plus', 'separator']
 
 def prepare_image(image):
