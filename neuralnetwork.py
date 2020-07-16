@@ -23,34 +23,11 @@ def prepare_image(image):
     if image is None:
         return
 
-    """
-    plt.subplot(1, 3, 1)
-    plt.imshow(image)
-    plt.title("Input image")
-    """
-
     # Convert to grayscale
     img_gray = utils.rgb_to_gray(image)
 
-    # Scale the input image to fit in a 64x64 area (keep aspect ratio)
-    # with a 4px margin on each side (actual size = 56x56)
-    height = image.shape[0]
-    width = image.shape[1]
-    scale_factor = 56 / (height if height > width else width)
-    height = np.uint(scale_factor * height)
-    width = np.uint(scale_factor * width)
-
-    # Bicubic interpolation for better results (slower)
-    img_gray = cv.resize(img_gray, (width, height), interpolation=cv.INTER_CUBIC)
-
     # Apply thresholding to the image, separating the background from the symbol
     thresh = cv.adaptiveThreshold(img_gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 2)
-
-    """
-    plt.subplot(1, 3, 2)
-    plt.imshow(thresh, 'gray')
-    plt.title("Thresholded image")
-    """
 
     # Define a kernel for morphological operations
     kernel = np.array(
@@ -62,20 +39,21 @@ def prepare_image(image):
     # Apply closing operator to remove noise
     thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
 
-    # Create a 64x64 image and fill it with solid white
-    image_prepared = np.zeros((64, 64), dtype=np.uint8)
+    # Fit the image in a squared area with a 8px margin on each side (without resizing)
+    height = image.shape[0]
+    width = image.shape[1]
+    size = max(height, width) + 16
+
+    # Create the final image canvas and fill it with solid white
+    image_prepared = np.zeros((size, size), dtype=np.uint8)
     image_prepared[:, :] = 255
 
-    # Write the thresholded image on the white-filled 64x64 canvas
-    y_start = 32-np.uint(height/2)
-    x_start = 32-np.uint(width/2)
-    image_prepared[int(y_start):int(y_start + height), int(x_start):int(x_start + width)] = thresh
-
-    """
-    plt.subplot(1, 3, 3)
-    plt.imshow(image_prepared, 'gray')
-    plt.title("Post-processed image")
-    """
+    # Write the thresholded image on the white canvas
+    y_start = int((size-height)/2)
+    x_start = int((size-width)/2)
+    y_end = y_start + height
+    x_end = x_start + width
+    image_prepared[y_start:y_end, x_start:x_end] = thresh
 
     return image_prepared
 
