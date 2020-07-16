@@ -1,6 +1,9 @@
 # Custom folders
 video/phone-videos/
 
+# VSCode project folders
+.vscode/
+
 # PyCharm project folders
 .idea/
 
