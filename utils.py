@@ -48,11 +48,11 @@ def hsv_to_rgb(image):
 
 def hsv_to_gray(image):
     """
-    Convert a HSV image into grayscale
+    Convert a HSV image into grayscale by keeping only the V component
     :param image: the HSV image
     :return: the same image but in grayscale
     """
-    return cv.cvtColor(image, cv.COLOR_HSV2GRAY)
+    return image[:, :, 2]
 
 
 def rgb_to_gray(image):
