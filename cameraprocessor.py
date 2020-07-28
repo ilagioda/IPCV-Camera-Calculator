@@ -242,27 +242,27 @@ def main():
 
             if symbols:
                 for s in symbols:
-                    # Prepare the image
+                    # Prepare the image (pre-processing)
                     prepared_symbol = net.prepare_image(s)
 
-                    # Predict the class label
+                    # Predict the class label using a neural network
                     predicted_symbol = net.predict_symbol(prepared_symbol)
 
-                    # Append the prediction to the array of predicted symbols
+                    # Build the math expression by appending the prediction to the array of symbols
                     predicted.append(predicted_symbol)
 
-                    # TODO: pass symbols to the neural network for classification (DONE),
-                    #       build the math expression by appending the results of the NN
-                    #       one by one (DONE) and finally call the solver to get the result and
-                    #       show it to the user (TO DO)
-
                 # Do the computation
-                #result = calculator.compute(predicted)          # TODO: da implementare
+                (outcome, value) = calculator.compute(predicted)
 
-                # TODO: show 'result' to the user
-                print("Simboli riconosciuti:")
-                for p in predicted:
-                    print("\t {}".format(p))
+                # Show 'result' to the user
+                print(outcome)
+                if outcome == 'SUCCESS':
+                    expression_str = ""
+                    for symbol in predicted:
+                        expression += symbol
+                    print(expression_str + value)
+                elif outcome == 'ERROR':
+                    print("Reason: " + value)
 
                 # End the "cap.isOpened" while
                 break
