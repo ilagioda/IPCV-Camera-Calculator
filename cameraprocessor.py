@@ -206,7 +206,7 @@ def main():
 
     # Init the camera
     #cap = cv.VideoCapture(1) ---> 1 = WEBCAM ESTERNA!!!!
-    cap = cv.VideoCapture("video/matita 17+65.mp4")
+    cap = cv.VideoCapture("video/matita 74+80.mp4")
 
     # Enable Matplotlib interactive mode
     plt.ion()
