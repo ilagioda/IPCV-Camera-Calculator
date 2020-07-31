@@ -259,8 +259,8 @@ def main():
                 if outcome == 'SUCCESS':
                     expression_str = ""
                     for symbol in predicted:
-                        expression += symbol
-                    print(expression_str + value)
+                        expression_str += symbol
+                    print(expression_str + str(value))
                 elif outcome == 'ERROR':
                     print("Reason: " + value)
 
