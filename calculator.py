@@ -1,10 +1,12 @@
+"""Module for parsing and evaluating arithmetic expressions"""
+
 OPERATORS = ['+', '-', '*', '/']
 
 def compute(symbols):
     """
     Solve an arithmetical expression, given an array containing the digits and the operator
-    :param symbols: an array of *string* containing the symbols (digits and operators) for the computation
-    :return: tuple containing the status code (SUCCESS, ERROR) and the result or the error description
+    :param symbols: an array of *strings* with the symbols (digits and operators)
+    :return: tuple containing the outcome (SUCCESS/ERROR) and the result or the error description
     """
 
     value = ""
@@ -16,20 +18,20 @@ def compute(symbols):
         symbol = symbols[i]
 
         # If the current symbol is part of a number
-        if symbol.isdigit() or symbol == '.' or (len(value) == 0 and (symbol == '+' or symbol == '-')):
+        if symbol.isdigit() or symbol == '.' or (len(value) == 0 and symbol in ('+', '-')):
             # Append the symbol to a string containing the value that's being parsed
             value += symbol
-        
+
         # If the current symbol is a mathematical operator
         elif symbol in OPERATORS or symbol == '=':
-            
+
             # Finish parsing the previous token by converting it to a number
             if len(value) > 0:
                 # Parse numerical value and check if any errors
                 try:
                     num = float(value)
                     expression.append(num)
-                except:
+                except ValueError:
                     return ('ERROR', 'Invalid value: ' + value)
 
                 # Reset the token variable
@@ -38,7 +40,7 @@ def compute(symbols):
             else:
                 # Unexpected mathematical operator
                 return ('ERROR', 'Invalid expression')
-            
+
             # Then append the operator to the list
             expression.append(symbol)
 
@@ -71,24 +73,24 @@ def apply_operator(operator, expression):
     """
 
     # Check that the provided operator is valid
-    if not (operator in OPERATORS):
+    if not operator in OPERATORS:
         raise Exception("apply_operator() should only be called with valid operators!")
 
     i = 1
     while i < len(expression) - 1:
 
-        if (expression[i] == operator):
+        if expression[i] == operator:
             op1 = expression[i - 1]
             op2 = expression[i + 1]
 
             # Apply the operation between the previous and following values
-            if (operator == '+'):
+            if operator == '+':
                 res = op1 + op2
-            elif (operator == '-'):
+            elif operator == '-':
                 res = op1 - op2
-            elif (operator == '*'):
+            elif operator == '*':
                 res = op1 * op2
-            elif (operator == '/'):
+            elif operator == '/':
                 res = op1 / op2
 
             # Replace the 3 items (op1, operator, op2) with the operation result
