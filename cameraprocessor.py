@@ -260,7 +260,7 @@ def main():
                     expression_str = ""
                     for symbol in predicted:
                         expression_str += symbol
-                    print(expression_str + str(value))
+                    print(expression_str + utils.float_to_str(value))
                 elif outcome == 'ERROR':
                     print("Reason: " + value)
 

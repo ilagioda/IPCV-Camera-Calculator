@@ -80,3 +80,12 @@ def rgb_to_hsv(image):
     :return: the same image but in HSV
     """
     return cv.cvtColor(image, cv.COLOR_RGB2HSV)
+
+
+def float_to_str(value):
+    """
+    Format a float value into a string, stripping away trailing zeros
+    :param value: the float value to be formatted
+    :return: the formatted string representing the value
+    """
+    return ('%.15f' % value).rstrip('0').rstrip('.')
