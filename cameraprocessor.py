@@ -44,6 +44,9 @@ def extract_element(image, start_point, end_point):
 
 
 def try_blend_intersected(new_rect, rectangles):
+    """
+    TODO: write docstring
+    """
     # Handle the case of an empty rectangles list
     if not rectangles:
         return new_rect
@@ -66,12 +69,12 @@ def try_blend_intersected(new_rect, rectangles):
             if (dx >= 0) and (dy >= 0):
                 intersection_area = dx * dy
 
-            factor = 0.8  # 80%
+            factor = 0.25  # 25%
 
             # If the 2 rectangles are heavily overlapped, merge them together
             area_rect = (x1 - x0) * (y1 - y0)
             area_new_rect = (max_x - min_x) * (max_y - min_y)
-            if (intersection_area >= factor * area_rect) or intersection_area >= factor * area_new_rect:
+            if intersection_area >= factor * min(area_rect, area_new_rect):
                 rectangles.remove(rect)
                 new_rect = [min(x0, min_x), min(y0, min_y), max(x1, max_x), max(y1, max_y)]
                 # The rectangle has changed and therefore update the coordinates
@@ -84,6 +87,9 @@ def try_blend_intersected(new_rect, rectangles):
 
 
 def try_blend_vertical(new_rect, rectangles):
+    """
+    TODO: write docstring
+    """
     # Handle the case of an empty rectangles list
     if not rectangles:
         return new_rect
@@ -115,28 +121,35 @@ def try_blend_vertical(new_rect, rectangles):
 
 def detect_symbols(image):
     kernel = np.array(
-        [[0, 1, 1, 1, 0],
-         [1, 1, 1, 1, 1],
-         [1, 1, 1, 1, 1],
-         [1, 1, 1, 1, 1],
-         [0, 1, 1, 1, 0]],
+        [[0, 1, 1, 1, 1, 1, 0],
+         [1, 1, 1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1, 1, 1],
+         [0, 1, 1, 1, 1, 1, 0]],
         np.uint8)
 
     # Convert image to gray and apply pre-processing
     image_gray = utils.bgr_to_gray(image)
 
-    # Apply opening operator
-    image_gray = cv.morphologyEx(image_gray, cv.MORPH_OPEN, kernel)
-
     # Apply blur
-    image_gray = cv.blur(image_gray, (3, 3))
+    image_gray = cv.GaussianBlur(image_gray, (9, 9), 0)
+
+    # Apply thresholding
+    image_thresh = cv.adaptiveThreshold(image_gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 9, 3)
+
+    # Apply opening operators
+    image_thresh = cv.morphologyEx(image_thresh, cv.MORPH_OPEN, kernel)
+
+    # Debug
+    #cv.imshow('Thresholded image', image_thresh)
 
     # Detect edges using Canny
     threshold = 30
-    canny_output = cv.Canny(image_gray, threshold, threshold * 2)
+    canny_output = cv.Canny(image_thresh, threshold, threshold * 2)
 
     # Create the content of window
-    # drawing = np.zeros((canny_output.shape[0], canny_output.shape[1], 3), dtype=np.uint8)
     drawing = np.copy(image)
 
     # Find contours
@@ -147,28 +160,29 @@ def detect_symbols(image):
     #     color = (random.randint(0, 256), random.randint(0, 256), random.randint(0, 256))
     #     cv.drawContours(drawing, contours, i, color)
 
-    # Find the convex hull and the rectangle for each contour
-    hull_list = []
+    old_rectangles = []
     rectangles = []
-    for i in range(len(contours)):
-        # Find the convex hull
-        # hull = cv.convexHull(contours[i])
-        # hull_list.append(hull)
 
-        # Find the coordinates of the rectangle containing the letter
-        x, y, w, h = cv.boundingRect(contours[i])
-        new_rect = [x, y, x + w, y + h]
+    # Find the coordinates of bounding rectangle for each symbol contour
+    for contour in contours:
+        x, y, w, h = cv.boundingRect(contour)
+        rectangles.append([x, y, x + w, y + h])
 
-        # Merge together rectangles that are heavily intersected (overlapped)
-        # The rectangle is returned identical or merged with another one in the list (which is deleted)
-        new_rect = try_blend_intersected(new_rect, rectangles)
+    while len(rectangles) != len(old_rectangles):
+        old_rectangles = rectangles.copy()
+        rectangles.clear()
 
-        # Blend rectangles if they are vertically aligned
-        # The rectangle is returned identical or merged with another one in the list (which is deleted)
-        new_rect = try_blend_vertical(new_rect, rectangles)
+        for rect in old_rectangles:
+            # Merge together rectangles that are heavily intersected (overlapped)
+            # The rectangle is returned identical or merged with another one in the list (which is deleted)
+            rect = try_blend_intersected(rect, rectangles)
 
-        # Add the processed rectangle to the list
-        rectangles.append(new_rect)
+            # Blend rectangles if they are vertically aligned
+            # The rectangle is returned identical or merged with another one in the list (which is deleted)
+            rect = try_blend_vertical(rect, rectangles)
+
+            # Add the processed rectangle to the list
+            rectangles.append(rect)
 
     # Sort the rectangles from left to right as they appear in the frame
     rectangles.sort(key=lambda r: r[0])
