@@ -2,7 +2,6 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-import sys
 import utils
 import neuralnetwork as net
 import calculator
@@ -120,6 +119,9 @@ def try_blend_vertical(new_rect, rectangles):
 
 
 def detect_symbols(image):
+    """
+        TODO: write docstring
+    """
     kernel = np.array(
         [[0, 1, 1, 1, 1, 1, 0],
          [1, 1, 1, 1, 1, 1, 1],
@@ -209,8 +211,71 @@ def detect_symbols(image):
     # Show everything in a window
     #cv.imshow('Detection results', drawing)        # TODO: commentato solo perchè Colab è stupido
 
-    # Return list of extracted symbols
-    return symbols
+    # Retrieve the coordinates of the "equal"
+    if rectangles:
+        equal_coordinates = rectangles[-1]
+    else:
+        equal_coordinates = []
+
+    # Return list of extracted symbols and the coordinates of the "equal"
+    return symbols, equal_coordinates
+
+
+def displayResult(img, result, equal_coordinates):
+    # Retrieve image height and width
+    img_height = img.shape[0]
+    img_width = img.shape[1]
+
+    # Define parameters for the cv.putText
+    # ... font
+    font = cv.FONT_HERSHEY_SIMPLEX
+    # ... fontScale
+    fontScale = 3
+    # ... color (black)
+    color = (0, 0, 0)
+    # ... line thickness (in px)
+    fontThickness = 4
+
+    # Define how much space we want between the equal and the result (in px)
+    result_space = 30
+
+    # Get the size of the text/result to be displayed
+    (result_width, result_height), baseline = cv.getTextSize(result, font, fontScale, fontThickness)
+
+    # Compute available_width
+    # REMIND: equal_coordinates is an array in the form [x, y, x + w, y + h]
+    available_width = img_width - (equal_coordinates[2] + result_space)
+
+    # Check if the string "result" can be contained horizontally in the image
+    if result_width < available_width:
+        # Everything ok => I can write the result horizontally, after the 'equal'
+        # Define the coordinates
+        coord = (equal_coordinates[2] + result_space, equal_coordinates[3])
+    else:
+        # The string "result" can not be contained horizontally in the image
+        # Compute available_height
+        available_height = img_height - (equal_coordinates[3] + result_space)
+
+        # Check if the string "result" can be contained vertically in the image
+        if result_height < available_height:
+            # Everything ok => I can write the result vertically, under the 'equal'
+            coord = (equal_coordinates[0], equal_coordinates[3] + result_space + result_height)
+        else:
+            # The string "result" can not be contained neither horizontally nor vertically in the image
+            # => I write the result in the top left corner of the image
+            coord = (0, result_height)
+
+    # Using cv2.putText() method
+    # NOTA: coord è il vertice in basso a SX della stringa da posizionare (origine = angolo in alto a SX)!
+    img_with_text = cv.putText(img, result, coord, font, fontScale, color, fontThickness, cv.LINE_AA)
+
+    # cv.imwrite("video/result.jpg", img_with_text)         # TODO: riga da rimuovere
+    print("HO STAMPATO A VIDEO IL RISULTATO!!")             # TODO: riga da rimuovere
+
+    # Displaying the image
+    plt.imshow(img_with_text)
+    plt.title("Operazione matematica")
+    plt.show()
 
 
 def main():
@@ -252,7 +317,7 @@ def main():
         # Check if the tracked yellow object has exited the video for enough frames
         if cont == stop_cont:
             # Run the detection algorithm on the current frame
-            symbols = detect_symbols(frame)
+            symbols, equal_coordinates = detect_symbols(frame)
 
             if symbols:
                 for s in symbols:
@@ -274,7 +339,13 @@ def main():
                     expression_str = ""
                     for symbol in predicted:
                         expression_str += symbol
+
+                    # Print the result in the console
                     print(expression_str + utils.float_to_str(value))
+
+                    # Show the result on the screen
+                    displayResult(frame, utils.float_to_str(value), equal_coordinates)
+
                 elif outcome == 'ERROR':
                     print("Reason: " + value)
 
