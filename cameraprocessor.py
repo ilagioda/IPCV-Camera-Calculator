@@ -230,7 +230,10 @@ def displayResult(img, result, equal_coordinates):
     # ... font
     font = cv.FONT_HERSHEY_SIMPLEX
     # ... fontScale
-    fontScale = 3
+    #fontScale = 3
+    fontScale = (3 * (equal_coordinates[3] - equal_coordinates[1])) / 25        # NOTA: 25 = altezza dell'"uguale" che ho quando le cifre
+                                                                                # del risultato mi sembrano ben
+                                                                                # proporzionate con fontScale = 3
     # ... color (black)
     color = (0, 0, 0)
     # ... line thickness (in px)
@@ -269,8 +272,7 @@ def displayResult(img, result, equal_coordinates):
     # NOTA: coord è il vertice in basso a SX della stringa da posizionare (origine = angolo in alto a SX)!
     img_with_text = cv.putText(img, result, coord, font, fontScale, color, fontThickness, cv.LINE_AA)
 
-    # cv.imwrite("video/result.jpg", img_with_text)         # TODO: riga da rimuovere
-    print("HO STAMPATO A VIDEO IL RISULTATO!!")             # TODO: riga da rimuovere
+    cv.imwrite("video/result.jpg", img_with_text)         # TODO: riga da rimuovere
 
     # Displaying the image
     plt.imshow(img_with_text)
