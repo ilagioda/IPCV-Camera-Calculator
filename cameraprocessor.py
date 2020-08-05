@@ -44,12 +44,16 @@ def extract_element(image, start_point, end_point):
 
 def try_blend_intersected(new_rect, rectangles):
     """
-    TODO: write docstring
+    Tries to blend one rectangle with any (significantly) overlapping element of the rectangles list
+    :param new_rect: the rectangle that is trying to be merged with the others
+    :param rectangles: list of other available rectangles
+    :return: the input rectangle unchanged if it wasn't blended with anything, or the result of the
+            merging operation (the rectangles list is modified by deleting merged rectangles)
     """
-    # Handle the case of an empty rectangles list
-    if not rectangles:
-        return new_rect
-    else:
+    if rectangles:
+
+        factor = 0.25  # 25% (overlapping threshold)
+
         min_x = new_rect[0]
         min_y = new_rect[1]
         max_x = new_rect[2]
@@ -68,31 +72,34 @@ def try_blend_intersected(new_rect, rectangles):
             if (dx >= 0) and (dy >= 0):
                 intersection_area = dx * dy
 
-            factor = 0.25  # 25%
-
-            # If the 2 rectangles are heavily overlapped, merge them together
+            # If the 2 rectangles are significantly overlapped, merge them together
             area_rect = (x1 - x0) * (y1 - y0)
             area_new_rect = (max_x - min_x) * (max_y - min_y)
             if intersection_area >= factor * min(area_rect, area_new_rect):
+                # Merge the 2 rectangles together
+                min_x = min(x0, min_x)
+                min_y = min(y0, min_y)
+                max_x = max(x1, max_x)
+                max_y = max(y1, max_y)
+                new_rect = [min_x, min_y, max_x, max_y]
+                # Delete the old rectangle
                 rectangles.remove(rect)
-                new_rect = [min(x0, min_x), min(y0, min_y), max(x1, max_x), max(y1, max_y)]
-                # The rectangle has changed and therefore update the coordinates
-                min_x = new_rect[0]
-                min_y = new_rect[1]
-                max_x = new_rect[2]
-                max_y = new_rect[3]
 
-        return new_rect
+    return new_rect
 
 
 def try_blend_vertical(new_rect, rectangles):
     """
-    TODO: write docstring
+    Checks if a rectangle is vertically aligned and close to another element, merging them together
+    :param new_rect: the rectangle that is trying to be merged with the others
+    :param rectangles: list of other available rectangles
+    :return: the input rectangle unchanged if it wasn't blended with anything, or the result of the
+            merging operation (the rectangles list is modified by deleting merged rectangles)
     """
-    # Handle the case of an empty rectangles list
-    if not rectangles:
-        return new_rect
-    else:
+    if rectangles:
+
+        threshold = 60  # 60px (max vertical distance for blending items together)
+
         min_x = new_rect[0]
         min_y = new_rect[1]
         max_x = new_rect[2]
@@ -104,18 +111,22 @@ def try_blend_vertical(new_rect, rectangles):
             x1 = rect[2]
             y1 = rect[3]
 
-            # If rect is vertically aligned (but separated) w.r.t. the new rectangle
-            if (x0 < max_x and x1 > min_x) and (y0 > max_y or y1 < min_y):
-                # Remove rect from the list and return a new rectangle obtained by merging the 2
-                rectangles.remove(rect)
-                new_rect = [min(x0, min_x), min(y0, min_y), max(x1, max_x), max(y1, max_y)]
-                # The rectangle has changed and therefore update the coordinates
-                min_x = new_rect[0]
-                min_y = new_rect[1]
-                max_x = new_rect[2]
-                max_y = new_rect[3]
+            # Compute the vertical distance between the 2 rectangles
+            distance = min(abs(max_y - y0), abs(min_y - y1))
 
-        return new_rect
+            # If rect is vertically aligned (but separated) w.r.t. the new rectangle
+            # and if they are close enough to be merged together
+            if (x0 < max_x and x1 > min_x) and (y0 > max_y or y1 < min_y) and distance <= threshold:
+                # Merge the 2 rectangles together
+                min_x = min(x0, min_x)
+                min_y = min(y0, min_y)
+                max_x = max(x1, max_x)
+                max_y = max(y1, max_y)
+                new_rect = [min_x, min_y, max_x, max_y]
+                # Delete the old rectangle
+                rectangles.remove(rect)
+
+    return new_rect
 
 
 def clear_outliers(rectangles):
