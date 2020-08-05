@@ -1,4 +1,5 @@
 import cv2 as cv
+import numpy as np
 
 
 def bgr_to_gray(image):
@@ -89,3 +90,29 @@ def float_to_str(value):
     :return: the formatted string representing the value
     """
     return ('%.15f' % value).rstrip('0').rstrip('.')
+
+
+def rectangle_center(rectangle):
+    """
+    Calculate the center point of a rectangle
+    :param rectangle: the rectangle in the form [min_x, min_y, max_x, max_y]
+    :return: (x, y) coordinates of the center (or None)
+    """
+    if not rectangle or len(rectangle) != 4:
+        return None
+
+    return (np.int((rectangle[2] + rectangle[0]) / 2),
+            np.int((rectangle[3] + rectangle[1]) / 2))
+
+
+def point_distance(point_a, point_b):
+    """
+    Compute the distance between 2 points in bi-dimensional space (x, y)
+    :param pointA: (x, y) coordinates of the first point
+    :param pointB: (x, y) coordinates of the second point
+    :return: the computed distance (or None)
+    """
+    if not point_a or len(point_a) != 2 or not point_b or len(point_b) != 2:
+        return None
+
+    return np.sqrt(((point_a[0] - point_b[0]) ** 2) + ((point_a[1] - point_b[1]) ** 2))

@@ -118,9 +118,68 @@ def try_blend_vertical(new_rect, rectangles):
         return new_rect
 
 
+def clear_outliers(rectangles):
+    """
+    Employs a clustering technique to try and remove possible noise points from actual symbols
+    :param rectangles: list of all detected symbols (including real ones and possible outliers)
+    :return: the updated rectangles list, hopefully without outliers
+    """
+    if not rectangles or len(rectangles) < 4:
+        return rectangles
+
+    # Get height and center point coordinates for each rectangle
+    heights = list(map(lambda r: r[3]-r[1], rectangles))
+    centers = list(map(utils.rectangle_center, rectangles))
+
+    # Remove min and max height values before computing the mean,
+    # in order to avoid extreme points that may be outliers
+    heights.remove(min(heights))
+    heights.remove(max(heights))
+
+    # Compute neighbourhood size based on average symbol height
+    radius = np.uint(2 * (sum(heights) / len(heights)))
+    threshold = 2
+
+    # For each rectangle, count how many neighbours it has inside the calculated radius
+    core_points = []
+    for center in centers:
+        cnt = 0
+        for other_center in centers:
+            if other_center != center:  # Avoid self
+                if utils.point_distance(center, other_center) < radius:
+                    cnt += 1
+
+        # If it has enough neighbours, it is marked as a core point
+        if cnt >= threshold:
+            #cv.circle(image, center, radius, (0, 255, 0))      # Debug
+            core_points.append(center)
+
+    # For all the rectangles that have not been marked as core points
+    i = 0
+    for center in centers:
+        if center not in core_points:
+            is_border = False
+            for other_center in centers:
+                if other_center != center:  # Avoid self
+                    # If it is close to atleast 1 core point, it is marked as a border point
+                    if utils.point_distance(center, other_center) < radius:
+                        is_border = True
+                        #cv.circle(image, center, radius, (255, 0, 0))      # Debug
+                        break
+
+            # Remaining non-border points are considered outliers and therefore removed
+            if not is_border:
+                #cv.circle(image, center, radius, (0, 0, 255))      # Debug
+                del rectangles[i]
+                i -= 1
+        i += 1
+
+    return rectangles
+
+
 def detect_symbols(image):
     """
-        TODO: write docstring
+    TODO: write docstring
     """
     kernel = np.array(
         [[0, 1, 1, 1, 1, 1, 0],
@@ -185,6 +244,9 @@ def detect_symbols(image):
 
             # Add the processed rectangle to the list
             rectangles.append(rect)
+
+    # Clear outliers from the detected list of rectangles
+    rectangles = clear_outliers(rectangles)
 
     # Sort the rectangles from left to right as they appear in the frame
     rectangles.sort(key=lambda r: r[0])
