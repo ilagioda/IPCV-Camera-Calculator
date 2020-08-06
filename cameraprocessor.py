@@ -129,7 +129,7 @@ def try_blend_vertical(new_rect, rectangles):
     return new_rect
 
 
-def clear_outliers(rectangles):
+def clear_outliers(rectangles, image):
     """
     Employs a clustering technique to try and remove possible noise points from actual symbols
     :param rectangles: list of all detected symbols (including real ones and possible outliers)
@@ -162,7 +162,7 @@ def clear_outliers(rectangles):
 
         # If it has enough neighbours, it is marked as a core point
         if cnt >= threshold:
-            #cv.circle(image, center, radius, (0, 255, 0))      # Debug
+            cv.circle(image, center, radius, (0, 255, 0))      # Debug
             core_points.append(center)
 
     # For all the rectangles that have not been marked as core points
@@ -175,15 +175,17 @@ def clear_outliers(rectangles):
                     # If it is close to atleast 1 core point, it is marked as a border point
                     if utils.point_distance(center, other_center) < radius:
                         is_border = True
-                        #cv.circle(image, center, radius, (255, 0, 0))      # Debug
+                        cv.circle(image, center, radius, (255, 0, 0))      # Debug
                         break
 
             # Remaining non-border points are considered outliers and therefore removed
             if not is_border:
-                #cv.circle(image, center, radius, (0, 0, 255))      # Debug
+                cv.circle(image, center, radius, (0, 0, 255))      # Debug
                 del rectangles[i]
                 i -= 1
         i += 1
+
+    cv.imwrite("./circles.jpg", image)         # TODO: riga da rimuovere
 
     return rectangles
 
@@ -257,7 +259,7 @@ def detect_symbols(image):
             rectangles.append(rect)
 
     # Clear outliers from the detected list of rectangles
-    rectangles = clear_outliers(rectangles)
+    rectangles = clear_outliers(rectangles, np.copy(image))
 
     # Sort the rectangles from left to right as they appear in the frame
     rectangles.sort(key=lambda r: r[0])
@@ -282,7 +284,7 @@ def detect_symbols(image):
             symbols.append(elem)
 
     # Show everything in a window
-    #cv.imshow('Detection results', drawing)        # TODO: commentato solo perchè Colab è stupido
+    cv.imwrite("./detected_rectangles.jpg", drawing)         # TODO: riga da rimuovere
 
     # Retrieve the coordinates of the "equal"
     if rectangles:
@@ -345,7 +347,7 @@ def displayResult(img, result, equal_coordinates):
     # NOTA: coord è il vertice in basso a SX della stringa da posizionare (origine = angolo in alto a SX)!
     img_with_text = cv.putText(img, result, coord, font, fontScale, color, fontThickness, cv.LINE_AA)
 
-    cv.imwrite("video/result.jpg", img_with_text)         # TODO: riga da rimuovere
+    cv.imwrite("./result.jpg", img_with_text)         # TODO: riga da rimuovere
 
     # Displaying the image
     plt.imshow(img_with_text)
