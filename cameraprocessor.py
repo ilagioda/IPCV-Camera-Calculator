@@ -26,56 +26,11 @@ def grab_frame(cap):
     return frame
 
 
-def try_blend_intersected(new_rect, rectangles):
+def try_blend(current, rectangles):
     """
-    Tries to blend one rectangle with any (significantly) overlapping element of the rectangles list
-    :param new_rect: the rectangle that is trying to be merged with the others
-    :param rectangles: list of other available rectangles
-    :return: the input rectangle unchanged if it wasn't blended with anything, or the result of the
-            merging operation (the rectangles list is modified by deleting merged rectangles)
-    """
-    if rectangles:
-
-        factor = 0.25  # 25% (overlapping threshold)
-
-        min_x = new_rect[0]
-        min_y = new_rect[1]
-        max_x = new_rect[2]
-        max_y = new_rect[3]
-
-        for rect in rectangles:
-            x0 = rect[0]
-            y0 = rect[1]
-            x1 = rect[2]
-            y1 = rect[3]
-
-            # Calculate the area of the intersection between rect and new_rect
-            intersection_area = 0
-            dx = min(max_x, x1) - max(min_x, x0)
-            dy = min(max_y, y1) - max(min_y, y0)
-            if (dx >= 0) and (dy >= 0):
-                intersection_area = dx * dy
-
-            # If the 2 rectangles are significantly overlapped, merge them together
-            area_rect = (x1 - x0) * (y1 - y0)
-            area_new_rect = (max_x - min_x) * (max_y - min_y)
-            if intersection_area >= factor * min(area_rect, area_new_rect):
-                # Merge the 2 rectangles together
-                min_x = min(x0, min_x)
-                min_y = min(y0, min_y)
-                max_x = max(x1, max_x)
-                max_y = max(y1, max_y)
-                new_rect = [min_x, min_y, max_x, max_y]
-                # Delete the old rectangle
-                rectangles.remove(rect)
-
-    return new_rect
-
-
-def try_blend_vertical(new_rect, rectangles):
-    """
-    Checks if a rectangle is vertically aligned and close to another element, merging them together
-    :param new_rect: the rectangle that is trying to be merged with the others
+    Check one rectangle against all others to try and blend some together, either based
+    on a (significant) overlap or due to a combination of vertical alignment and proximity
+    :param current: the rectangle that is trying to be merged with the others
     :param rectangles: list of other available rectangles
     :return: the input rectangle unchanged if it wasn't blended with anything, or the result of the
             merging operation (the rectangles list is modified by deleting merged rectangles)
@@ -83,13 +38,12 @@ def try_blend_vertical(new_rect, rectangles):
     if rectangles:
 
         max_distance = 60   # 60px (max vertical distance for blending items together)
-        threshold = 0.25    # 25% minimum horizontal overlapping in order to consider
-                            # 2 items vertically aligned
+        factor = 0.25       # 25% (minimum significant overlapping)
 
-        min_x = new_rect[0]
-        min_y = new_rect[1]
-        max_x = new_rect[2]
-        max_y = new_rect[3]
+        min_x = current[0]
+        min_y = current[1]
+        max_x = current[2]
+        max_y = current[3]
 
         for rect in rectangles:
             x0 = rect[0]
@@ -98,24 +52,37 @@ def try_blend_vertical(new_rect, rectangles):
             y1 = rect[3]
 
             # Compute the vertical distance between the 2 rectangles
-            distance = min(abs(max_y - y0), abs(min_y - y1))
+            distance_y = min(abs(max_y - y0), abs(min_y - y1))
 
-            # Check interval intersection for horizontal overlapping
-            overlap = min(x1, max_x) - max(x0, min_x) if x0 < max_x and x1 > min_x else 0
+            # Check horizontal interval intersection (shared X coordinates)
+            shared_x = min(x1, max_x) - max(x0, min_x) if x0 < max_x and x1 > min_x else 0
 
-            # If rect is vertically aligned (but separated) w.r.t. the new rectangle
-            # and if they are close enough to be merged together
-            if overlap > threshold * min(max_x - min_x, x1 - x0) and distance <= max_distance:
-                # Merge the 2 rectangles together
+            # Calculate the area of the intersection between rect and new_rect
+            dx = min(max_x, x1) - max(min_x, x0)
+            dy = min(max_y, y1) - max(min_y, y0)
+            intersection_area = dx * dy if (dx >= 0) and (dy >= 0) else 0
+
+            # Rectangles are considered vertically aligned if there is proximity along Y axis
+            # and the 2 rectangles share a significant portion of their X coordinates (25%)
+            aligned_vertical = (shared_x > factor * min(max_x - min_x, x1 - x0)
+                                and distance_y <= max_distance)
+
+            # Two rectangles are considered overlapped if the area of their intersection
+            # covers a significant portion of each rectangle's own area (25%)
+            overlapped = intersection_area > factor * min((x1 - x0) * (y1 - y0),
+                        (max_x - min_x) * (max_y - min_y))
+
+            # If atleast one condition is satisfied, merge the 2 rectangles together
+            if overlapped or aligned_vertical:
                 min_x = min(x0, min_x)
                 min_y = min(y0, min_y)
                 max_x = max(x1, max_x)
                 max_y = max(y1, max_y)
-                new_rect = [min_x, min_y, max_x, max_y]
+                current = [min_x, min_y, max_x, max_y]
                 # Delete the old rectangle
                 rectangles.remove(rect)
 
-    return new_rect
+    return current
 
 
 def clear_outliers(rectangles, image):
@@ -236,13 +203,9 @@ def detect_symbols(image):
         rectangles.clear()
 
         for rect in old_rectangles:
-            # Merge together rectangles that are heavily intersected (overlapped)
-            # The rectangle is returned identical or merged with another one in the list (which is deleted)
-            rect = try_blend_intersected(rect, rectangles)
-
-            # Blend rectangles if they are vertically aligned
-            # The rectangle is returned identical or merged with another one in the list (which is deleted)
-            rect = try_blend_vertical(rect, rectangles)
+            # Merge rectangles that are heavily intersected (overlapped) or vertically aligned
+            # The rectangle is returned identical or merged with another one (which is deleted)
+            rect = try_blend(rect, rectangles)
 
             # Add the processed rectangle to the list
             rectangles.append(rect)
