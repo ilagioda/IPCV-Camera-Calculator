@@ -98,7 +98,9 @@ def try_blend_vertical(new_rect, rectangles):
     """
     if rectangles:
 
-        threshold = 60  # 60px (max vertical distance for blending items together)
+        max_distance = 60   # 60px (max vertical distance for blending items together)
+        threshold = 0.25    # 25% minimum horizontal overlapping in order to consider
+                            # 2 items vertically aligned
 
         min_x = new_rect[0]
         min_y = new_rect[1]
@@ -114,9 +116,12 @@ def try_blend_vertical(new_rect, rectangles):
             # Compute the vertical distance between the 2 rectangles
             distance = min(abs(max_y - y0), abs(min_y - y1))
 
+            # Check interval intersection for horizontal overlapping
+            overlap = min(x1, max_x) - max(x0, min_x) if x0 < max_x and x1 > min_x else 0
+
             # If rect is vertically aligned (but separated) w.r.t. the new rectangle
             # and if they are close enough to be merged together
-            if (x0 < max_x and x1 > min_x) and (y0 > max_y or y1 < min_y) and distance <= threshold:
+            if overlap > threshold * min(max_x - min_x, x1 - x0) and distance <= max_distance:
                 # Merge the 2 rectangles together
                 min_x = min(x0, min_x)
                 min_y = min(y0, min_y)
@@ -362,7 +367,7 @@ def main():
 
     # Init the camera
     #cap = cv.VideoCapture(1) ---> 1 = WEBCAM ESTERNA!!!!
-    cap = cv.VideoCapture("video/matita 74+80.mp4")
+    cap = cv.VideoCapture("video/16+40.mp4")
 
     # Enable Matplotlib interactive mode
     plt.ion()
