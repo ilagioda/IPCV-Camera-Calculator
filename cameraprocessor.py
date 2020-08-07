@@ -1,7 +1,6 @@
 import cv2 as cv
-import matplotlib.pyplot as plt
 import numpy as np
-import random
+import matplotlib.pyplot as plt
 import utils
 import neuralnetwork as net
 import calculator
@@ -187,8 +186,7 @@ def detect_symbols(image):
 
     # Draw contours
     # for i in range(len(contours)):
-    #     color = (random.randint(0, 256), random.randint(0, 256), random.randint(0, 256))
-    #     cv.drawContours(drawing, contours, i, color)
+    #     cv.drawContours(drawing, contours, i, (0, 255, 0))
 
     old_rectangles = []
     rectangles = []
@@ -310,10 +308,7 @@ def displayResult(img, result, equal_coordinates):
 
 def main():
 
-    # Initialize the random number generator
-    random.seed(12345)
-
-    # Init the camera
+    # Initialize the camera
     #cap = cv.VideoCapture(1) ---> 1 = WEBCAM ESTERNA!!!!
     cap = cv.VideoCapture("video/16+40.mp4")
 
