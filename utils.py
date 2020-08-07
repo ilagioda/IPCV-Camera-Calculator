@@ -83,6 +83,24 @@ def rgb_to_hsv(image):
     return cv.cvtColor(image, cv.COLOR_RGB2HSV)
 
 
+def crop(image, start_point, end_point):
+    """
+    Extract a portion of the provided image, by the specified coordinates
+    :param image: the source image
+    :param start_point: the top-left point of the crop area
+    :param end_point: the bottom-right point of the crop area
+    :return: the cropped portion of the image
+    """
+    if image is None:
+        return None
+
+    if (start_point is None or len(start_point) != 2 or
+            end_point is None or len(end_point) != 2):
+        return None
+
+    return image[start_point[1]:end_point[1], start_point[0]:end_point[0]]
+
+
 def float_to_str(value):
     """
     Format a float value into a string, stripping away trailing zeros

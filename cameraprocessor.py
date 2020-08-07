@@ -26,22 +26,6 @@ def grab_frame(cap):
     return frame
 
 
-def extract_element(image, start_point, end_point):
-    """
-    Extract an element from the frame, by specifying its coordinates
-    :param image: the source image
-    :param start_point: the top-left point of the crop area
-    :param end_point: the bottom-right point of the crop area
-    :return: the cropped portion of the image (in RGB)
-    """
-    if image is None:
-        return None
-
-    elem = image[start_point[1]:end_point[1], start_point[0]:end_point[0]]
-    elem = utils.bgr_to_rgb(elem)
-    return elem
-
-
 def try_blend_intersected(new_rect, rectangles):
     """
     Tries to blend one rectangle with any (significantly) overlapping element of the rectangles list
@@ -283,10 +267,11 @@ def detect_symbols(image):
         # Draw the rectangle around the letter
         drawing = cv.rectangle(drawing, start_point, end_point, color, thickness)
         # Crop the element from the image
-        elem = extract_element(image, start_point, end_point)
+        elem = utils.crop(image, start_point, end_point)
         # Append all valid elements to those that have to be processed by the neural network
+        # The network operates on RGB images, therefore a color space conversion is performed
         if elem is not None:
-            symbols.append(elem)
+            symbols.append(utils.bgr_to_rgb(elem))
 
     # Show everything in a window
     cv.imwrite("./detected_rectangles.jpg", drawing)         # TODO: riga da rimuovere
