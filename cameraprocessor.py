@@ -85,7 +85,7 @@ def clear_outliers(rectangles, image):
     heights.remove(max(heights))
 
     # Compute neighbourhood size based on average symbol height
-    radius = np.uint(2 * (sum(heights) / len(heights)))
+    radius = np.uint(2.5 * (sum(heights) / len(heights)))
     threshold = 2
 
     # For each rectangle, count how many neighbours it has inside the calculated radius
