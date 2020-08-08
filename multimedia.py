@@ -173,7 +173,7 @@ class InputMedia:
     of multimedia content (image, video or webcam stream) with a standard interface
     """
 
-    def __init__(self, path, mediaType='video'):
+    def __init__(self, mediaType, path):
         """
         Initializes the InputMedia resource by setting some parameters and
         finally accessing the media source itself, checking for possible errors

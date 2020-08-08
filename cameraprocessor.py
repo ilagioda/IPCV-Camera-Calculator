@@ -291,7 +291,7 @@ def displayResult(img, result, equal_coordinates):
 def main():
 
     # Initialize the InputMedia and MediaPlayer (output) objects
-    source = multimedia.InputMedia("video/16+40.mp4", 'video')
+    source = multimedia.InputMedia('video', "video/16+40.mp4")
     output = multimedia.MediaPlayer('video', source.framerate()).start()
 
     # Timer parameters
