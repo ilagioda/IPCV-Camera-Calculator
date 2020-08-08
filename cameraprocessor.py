@@ -320,6 +320,39 @@ def main():
             # Run the detection algorithm on the current frame
             symbols, equal_coordinates = detect_symbols(frame)
 
+            if symbols:
+                for s in symbols:
+                    # Prepare the image (pre-processing)
+                    prepared_symbol = net.prepare_image(s)
+
+                    # Predict the class label using a neural network
+                    predicted_symbol = net.predict_symbol(prepared_symbol)
+
+                    # Build the math expression by appending the prediction to the array of symbols
+                    predicted.append(predicted_symbol)
+
+                # Do the computation
+                (outcome, value) = calculator.compute(predicted)
+
+                # Show 'result' to the user
+                print(outcome)
+                if outcome == 'SUCCESS':
+                    expression_str = ""
+                    for symbol in predicted:
+                        expression_str += symbol
+
+                    # Print the result in the console
+                    print(expression_str + utils.float_to_str(value))
+
+                    # Show the result on the screen
+                    displayResult(frame, utils.float_to_str(value), equal_coordinates)
+
+                elif outcome == 'ERROR':
+                    print("Reason: " + value)
+
+                # End the "cap.isOpened" while
+                break
+
         # Convert the current frame in HSV (note: needed by cv.inRange())
         img = utils.bgr_to_hsv(frame)
 
