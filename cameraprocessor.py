@@ -230,6 +230,9 @@ def detect_symbols(image):
 
 
 def displayResult(img, result, equal_coordinates):
+    """
+    TODO: docstring
+    """
     # Retrieve image height and width
     img_height = img.shape[0]
     img_width = img.shape[1]
@@ -239,9 +242,8 @@ def displayResult(img, result, equal_coordinates):
     font = cv.FONT_HERSHEY_SIMPLEX
     # ... fontScale
     #fontScale = 3
-    fontScale = (3 * (equal_coordinates[3] - equal_coordinates[1])) / 25        # NOTA: 25 = altezza dell'"uguale" che ho quando le cifre
-                                                                                # del risultato mi sembrano ben
-                                                                                # proporzionate con fontScale = 3
+    fontScale = (3 * (equal_coordinates[3] - equal_coordinates[1])) / 25    # NOTA: 25 = altezza dell'uguale che ho quando le cifre
+                                                                            # del risultato mi sembrano ben proporzionate con fontScale = 3
     # ... color (black)
     color = (0, 0, 0)
     # ... line thickness (in px)
@@ -288,11 +290,14 @@ def displayResult(img, result, equal_coordinates):
     plt.show()
 
 
-def main():
+def run(sourceType, path):
+    """
+    TODO: docstring
+    """
 
     # Initialize the InputMedia and MediaPlayer (output) objects
-    source = multimedia.InputMedia('video', "video/16+40.mp4")
-    output = multimedia.MediaPlayer('video', source.framerate()).start()
+    source = multimedia.InputMedia(sourceType, path)
+    output = multimedia.MediaPlayer(sourceType, source.framerate()).start()
 
     # Timer parameters
     cont = 0
@@ -312,13 +317,38 @@ def main():
         if frame is None:
             break
 
-        # Print cont
-        print("Cont: {}".format(cont))
+        # Run handwriting detection for (live or recorded) video inputs
+        if sourceType in ['video', 'webcam']:
 
-        # Check if the tracked yellow object has exited the video for enough frames
-        if cont == stop_cont:
-            # Run the detection algorithm on the current frame
-            symbols, equal_coordinates = detect_symbols(frame)
+            # Print cont
+            print("Cont: {}".format(cont))
+
+            # Convert the current frame in HSV (note: needed by cv.inRange())
+            img = utils.bgr_to_hsv(frame)
+
+            # Thresholding with the usage of a mask for detecting the yellow
+            lower_yellow = np.array([20, 110, 110])
+            upper_yellow = np.array([40, 255, 255])
+            mask = cv.inRange(img, lower_yellow, upper_yellow)
+
+            # Find contours of yellow objects
+            (contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+            flag = 0
+            for contour in contours:
+                flag = 1
+                area = cv.contourArea(contour)
+                if area > 800:
+                    # Yellow object found
+                    cont = 0
+                    x, y, w, h = cv.boundingRect(contour)
+                    frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
+            if flag == 0:
+                # Yellow object not found
+                cont += 1
+
+        # Check if it's time to run the detection algorithm on the current frame/image
+        if cont == stop_cont or sourceType == 'image':
+            (symbols, equal_coordinates) = detect_symbols(frame)
 
             if symbols:
                 for s in symbols:
@@ -337,9 +367,7 @@ def main():
                 # Show 'result' to the user
                 print(outcome)
                 if outcome == 'SUCCESS':
-                    expression_str = ""
-                    for symbol in predicted:
-                        expression_str += symbol
+                    expression_str = "".join(predicted)
 
                     # Print the result in the console
                     print(expression_str + utils.float_to_str(value))
@@ -353,38 +381,13 @@ def main():
                 # End the "cap.isOpened" while
                 break
 
-        # Convert the current frame in HSV (note: needed by cv.inRange())
-        img = utils.bgr_to_hsv(frame)
-
-        # Thresholding with the usage of a mask for detecting the yellow
-        lower_yellow = np.array([20, 110, 110])
-        upper_yellow = np.array([40, 255, 255])
-        mask = cv.inRange(img, lower_yellow, upper_yellow)
-
-        # Find contours of yellow objects
-        (contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-        flag = 0
-        for contour in contours:
-            flag = 1
-            area = cv.contourArea(contour)
-            if area > 800:
-                # Yellow object found
-                cont = 0
-                x, y, w, h = cv.boundingRect(contour)
-                frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
-        if flag == 0:
-            # Yellow object not found
-            cont += 1
-
         # Show the processed frame to the user
         output.show(frame)
 
+        # When working on an image, the program stops after the first iteration
+        if sourceType == 'image':
+            break
+
     # Close the MediaPlayer output (waiting for its termination)
+    output.signal_end()
     output.close()
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        exit(0)
