@@ -103,6 +103,11 @@ class MediaPlayer:
         # Wait for the termination of the MediaPlayer thread
         if self.type == 'video':
             self.thread.join()
+        elif self.type == 'image':
+            # Wait for one last action by the user to close the window
+            while cv.getWindowProperty('Image', cv.WND_PROP_VISIBLE) > 0:
+                if cv.waitKey(100) & 0xFF == ord('\x1b'):
+                    break
 
         # Close all GUI windows
         cv.destroyAllWindows()
@@ -185,7 +190,7 @@ class InputMedia:
         self.closed = False
 
         self.media = cv.imread(path) if mediaType == 'image' else cv.VideoCapture(path)
-        if not self.media:
+        if self.media is None:
             self.closed = True
             raise RuntimeError("Cannot open " + mediaType + " " + str(path))
 
