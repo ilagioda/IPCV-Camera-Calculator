@@ -2,27 +2,9 @@ import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
 import utils
+import multimedia
 import neuralnetwork as net
 import calculator
-
-def grab_frame(cap):
-    """
-    Method to grab a frame from the camera
-    :param cap: the VideoCapture object
-    :return: the captured image
-    """
-    ret, frame = cap.read()
-
-    if frame is not None:
-        height = frame.shape[0]
-        width = frame.shape[1]
-
-        # Resize the frame to 960x540 (preserve aspect ratio)
-        factor = min(960 / width, 540 / height)
-        new_size = (int(width * factor), int(height * factor))
-        frame = cv.resize(frame, new_size)
-
-    return frame
 
 
 def try_blend(current, rectangles):
@@ -308,31 +290,25 @@ def displayResult(img, result, equal_coordinates):
 
 def main():
 
-    # Initialize the camera
-    #cap = cv.VideoCapture(1) ---> 1 = WEBCAM ESTERNA!!!!
-    cap = cv.VideoCapture("video/16+40.mp4")
-
-    # Enable Matplotlib interactive mode
-    plt.ion()
-
-    # Create a figure to be updated
-    fig = plt.figure()
-    fig.canvas.mpl_connect("close_event", lambda event: cap.release())
-
-    # Prep a variable for the first run
-    ax_img = None
+    # Initialize the InputMedia and MediaPlayer (output) objects
+    source = multimedia.InputMedia("video/16+40.mp4", 'video')
+    output = multimedia.MediaPlayer('video', source.framerate()).start()
 
     # Timer parameters
     cont = 0
-    pause_time = 1 / 30  # pause: 30 frames per second
     stop_cont = 30
 
     # Initialize the array that will contain the predicted symbols
     predicted = []
 
-    while cap.isOpened():
+    while source.isOpened():
+
+        # Check if the program has been terminated by the user
+        if output.stopped():
+            break
+
         # Get the current frame
-        frame = grab_frame(cap)
+        frame = source.read()
         if frame is None:
             break
 
@@ -343,39 +319,6 @@ def main():
         if cont == stop_cont:
             # Run the detection algorithm on the current frame
             symbols, equal_coordinates = detect_symbols(frame)
-
-            if symbols:
-                for s in symbols:
-                    # Prepare the image (pre-processing)
-                    prepared_symbol = net.prepare_image(s)
-
-                    # Predict the class label using a neural network
-                    predicted_symbol = net.predict_symbol(prepared_symbol)
-
-                    # Build the math expression by appending the prediction to the array of symbols
-                    predicted.append(predicted_symbol)
-
-                # Do the computation
-                (outcome, value) = calculator.compute(predicted)
-
-                # Show 'result' to the user
-                print(outcome)
-                if outcome == 'SUCCESS':
-                    expression_str = ""
-                    for symbol in predicted:
-                        expression_str += symbol
-
-                    # Print the result in the console
-                    print(expression_str + utils.float_to_str(value))
-
-                    # Show the result on the screen
-                    displayResult(frame, utils.float_to_str(value), equal_coordinates)
-
-                elif outcome == 'ERROR':
-                    print("Reason: " + value)
-
-                # End the "cap.isOpened" while
-                break
 
         # Convert the current frame in HSV (note: needed by cv.inRange())
         img = utils.bgr_to_hsv(frame)
@@ -400,16 +343,11 @@ def main():
             # Yellow object not found
             cont += 1
 
-        # Draw the frame in the viewport
-        if ax_img is None:
-            ax_img = plt.imshow(utils.bgr_to_rgb(frame))
-            plt.axis("off")  # hide axis, ticks, ...
-            plt.title("Camera Capture")
-            plt.show()
-        else:
-            ax_img.set_data(utils.bgr_to_rgb(frame))
-            fig.canvas.draw()
-            plt.pause(pause_time)
+        # Show the processed frame to the user
+        output.show(frame)
+
+    # Close the MediaPlayer output (waiting for its termination)
+    output.close()
 
 
 if __name__ == "__main__":
