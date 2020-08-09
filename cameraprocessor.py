@@ -229,6 +229,46 @@ def detect_symbols(image):
     return symbols, equal_coordinates
 
 
+def write_status(frame, status):
+    """
+    Adds a text on the image (top-left corner is the standard), describing
+    the current application status with different colors and parameters
+    :param frame: the BGR image on which the text has to be added
+    :param status: a string describing the status {WAITING, ERROR, SUCCESS, FINISHED}
+    :return: the frame with the status text on it
+    """
+    if frame is None:
+        return None
+
+    if status not in {'WAITING', 'ERROR', 'SUCCESS', 'FINISHED'}:
+        raise ValueError("Status can only be one of {WAITING, ERROR, SUCCESS, FINISHED}")
+
+    # Default text parameters
+    font = cv.FONT_HERSHEY_DUPLEX
+    scale = 1
+    thickness = 2
+    margin = 15
+
+    # Write the 'STATUS: ' word in a grey colour
+    (text_width, text_height), _ = cv.getTextSize('STATUS: ', font, scale, thickness)
+    position = (0 + margin, text_height + margin)
+    frame = cv.putText(frame, 'STATUS: ', position, font, scale, (50, 50, 50), thickness, cv.LINE_AA)
+
+    # Determine the position of the status name based on the size of the text
+    (_, text_height), _ = cv.getTextSize(status, font, scale, thickness)
+    position = (text_width + margin, text_height + margin)
+
+    # Choose specific text parameters for the current status
+    if status == 'WAITING':
+        color = (50, 190, 230)      # Yellow
+    elif status == 'ERROR':
+        color = (0, 0, 250)         # Red
+    else:   # SUCCESS or FINISHED
+        color = (0, 240, 0)         # Green
+
+    return cv.putText(frame, status, position, font, scale, color, thickness, cv.LINE_AA)
+
+
 def displayResult(img, result, equal_coordinates):
     """
     TODO: docstring
@@ -299,9 +339,10 @@ def run(sourceType, path):
     source = multimedia.InputMedia(sourceType, path)
     output = multimedia.MediaPlayer(sourceType, source.framerate()).start()
 
-    # Timer parameters
-    cont = 0
-    stop_cont = 30
+    # Status parameters
+    status = 'WAITING'
+    counter = 0
+    stop_counter = 30
 
     # Initialize the array that will contain the predicted symbols
     predicted = []
@@ -315,13 +356,14 @@ def run(sourceType, path):
         # Get the current frame
         frame = source.read()
         if frame is None:
+            status = 'FINISHED'
             break
 
         # Run handwriting detection for (live or recorded) video inputs
         if sourceType in ['video', 'webcam']:
 
             # Print cont
-            print("Cont: {}".format(cont))
+            print("Cont: {}".format(counter))
 
             # Convert the current frame in HSV (note: needed by cv.inRange())
             img = utils.bgr_to_hsv(frame)
@@ -339,15 +381,16 @@ def run(sourceType, path):
                 area = cv.contourArea(contour)
                 if area > 800:
                     # Yellow object found
-                    cont = 0
+                    status = 'WAITING'          # Keep 'WAITING' status
+                    counter = 0
                     x, y, w, h = cv.boundingRect(contour)
                     frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
             if flag == 0:
                 # Yellow object not found
-                cont += 1
+                counter += 1
 
         # Check if it's time to run the detection algorithm on the current frame/image
-        if cont == stop_cont or sourceType == 'image':
+        if counter == stop_counter or sourceType == 'image':
             (symbols, equal_coordinates) = detect_symbols(frame)
 
             if symbols:
@@ -362,11 +405,13 @@ def run(sourceType, path):
                     predicted.append(predicted_symbol)
 
                 # Do the computation
-                (outcome, value) = calculator.compute(predicted)
+                (status, value) = calculator.compute(predicted)
+
+                status = 'SUCCESS'
 
                 # Show 'result' to the user
-                print(outcome)
-                if outcome == 'SUCCESS':
+                print(status)
+                if status == 'SUCCESS':
                     expression_str = "".join(predicted)
 
                     # Print the result in the console
@@ -375,13 +420,11 @@ def run(sourceType, path):
                     # Show the result on the screen
                     displayResult(frame, utils.float_to_str(value), equal_coordinates)
 
-                elif outcome == 'ERROR':
+                elif status == 'ERROR':
                     print("Reason: " + value)
 
-                # End the "cap.isOpened" while
-                break
-
         # Show the processed frame to the user
+        frame = write_status(frame, status)
         output.show(frame)
 
         # When working on an image, the program stops after the first iteration
