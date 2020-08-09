@@ -16,10 +16,10 @@ from PIL import Image
 
 
 # Set of 'global' classifier variables
-NUM_CLASSES = 16
+NUM_CLASSES = 15
 NN_PATH = './preproc_augm_symbols_net.pth'
 LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-          'div', 'equal', 'minus', 'mul', 'plus', 'separator']
+          'div', 'equal', 'minus', 'mul', 'plus']
 
 
 def prepare_image(image):
@@ -90,7 +90,7 @@ def predict_symbol(image_cv):
     # Define a new NN model
     net = alexnet()
 
-    # Change the last layer of AlexNet to output 16 classes
+    # Change the last layer of AlexNet to output 15 classes
     net.classifier[6] = nn.Linear(4096, NUM_CLASSES)
 
     # Load the already-trained model
@@ -124,8 +124,6 @@ def predict_symbol(image_cv):
         fixed_label = '*'
     elif label == 'plus':
         fixed_label = '+'
-    elif label == 'separator':
-        fixed_label = '.'
     else:
         fixed_label = label
 
