@@ -235,7 +235,7 @@ def write_status(frame, status):
     the current application status with different colors and parameters
     :param frame: the BGR image on which the text has to be added
     :param status: a string describing the status {WAITING, ERROR, SUCCESS, FINISHED}
-    :return: the frame with the status text on it
+    :return: the frame with the status text on it (or None)
     """
     if frame is None:
         return None
@@ -269,65 +269,58 @@ def write_status(frame, status):
     return cv.putText(frame, status, position, font, scale, color, thickness, cv.LINE_AA)
 
 
-def displayResult(img, result, equal_coordinates):
+def write_result(frame, result, equal_coords):
     """
-    TODO: docstring
+    Writes the result of the arithmetical operation on the image, in the form
+    of OpenCV-rendered text, positioning it near the '=' sign of the expression
+    :param frame: the BGR image on which the result has to be written
+    :param result: a string representing the numerical result of the expression
+    :param equal_coords: coordinates [x0, y0, x1, y1] of the '=' rectangle
+    :return: the frame with the result text written on it (or None)
     """
+    if frame is None:
+        return None
+
     # Retrieve image height and width
-    img_height = img.shape[0]
-    img_width = img.shape[1]
+    frame_height = frame.shape[0]
+    frame_width = frame.shape[1]
 
-    # Define parameters for the cv.putText
-    # ... font
+    # Define text rendering parameters for cv.putText()
     font = cv.FONT_HERSHEY_SIMPLEX
-    # ... fontScale
-    #fontScale = 3
-    fontScale = (3 * (equal_coordinates[3] - equal_coordinates[1])) / 25    # NOTA: 25 = altezza dell'uguale che ho quando le cifre
-                                                                            # del risultato mi sembrano ben proporzionate con fontScale = 3
-    # ... color (black)
-    color = (0, 0, 0)
-    # ... line thickness (in px)
-    fontThickness = 4
-
-    # Define how much space we want between the equal and the result (in px)
-    result_space = 30
+    scale = (3 * (equal_coords[3] - equal_coords[1])) / 25    # Equal sign of 25px -> font scale = 3
+    color = (0, 0, 0)   # Black
+    thickness = 4   # px
+    spacing = 30    # px
 
     # Get the size of the text/result to be displayed
-    (result_width, result_height), baseline = cv.getTextSize(result, font, fontScale, fontThickness)
+    (text_width, text_height), _ = cv.getTextSize(result, font, scale, thickness)
 
     # Compute available_width
-    # REMIND: equal_coordinates is an array in the form [x, y, x + w, y + h]
-    available_width = img_width - (equal_coordinates[2] + result_space)
+    available_width = frame_width - (equal_coords[2] + spacing)
 
-    # Check if the string "result" can be contained horizontally in the image
-    if result_width < available_width:
-        # Everything ok => I can write the result horizontally, after the 'equal'
-        # Define the coordinates
-        coord = (equal_coordinates[2] + result_space, equal_coordinates[3])
+    # Check if the result string can be contained horizontally in the image
+    if text_width < available_width:
+        # Everything's ok => write the result on the right of the '='
+        coord = (equal_coords[2] + spacing, equal_coords[3])
     else:
-        # The string "result" can not be contained horizontally in the image
+        # The result string does not fit on the right of the '='
         # Compute available_height
-        available_height = img_height - (equal_coordinates[3] + result_space)
+        available_height = frame_height - (equal_coords[3] + spacing)
 
-        # Check if the string "result" can be contained vertically in the image
-        if result_height < available_height:
-            # Everything ok => I can write the result vertically, under the 'equal'
-            coord = (equal_coordinates[0], equal_coordinates[3] + result_space + result_height)
+        # Check if the result string can be contained vertically in the image
+        if text_height < available_height:
+            # Everything's ok => write the result below the '='
+            coord = (frame_width - text_width, equal_coords[3] + spacing + text_height)
         else:
-            # The string "result" can not be contained neither horizontally nor vertically in the image
-            # => I write the result in the top left corner of the image
-            coord = (0, result_height)
+            # There's not enough space around the '=' to contain the result string
+            # => write the result at the top right corner of the image
+            coord = (frame_width - text_width, text_height)
 
-    # Using cv2.putText() method
-    # NOTA: coord è il vertice in basso a SX della stringa da posizionare (origine = angolo in alto a SX)!
-    img_with_text = cv.putText(img, result, coord, font, fontScale, color, fontThickness, cv.LINE_AA)
+    # Render text on the image (coordinates refer to the bottom left corner of the text area)
+    frame = cv.putText(frame, result, coord, font, scale, color, thickness, cv.LINE_AA)
 
-    cv.imwrite("./result.jpg", img_with_text)         # TODO: riga da rimuovere
-
-    # Displaying the image
-    plt.imshow(img_with_text)
-    plt.title("Operazione matematica")
-    plt.show()
+    cv.imwrite("./result.jpg", frame)         # TODO: riga da rimuovere
+    return frame
 
 
 def run(sourceType, path):
@@ -339,8 +332,9 @@ def run(sourceType, path):
     source = multimedia.InputMedia(sourceType, path)
     output = multimedia.MediaPlayer(sourceType, source.framerate()).start()
 
-    # Status parameters
+    # Status variables
     status = 'WAITING'
+    result = None
     counter = 0
     stop_counter = 30
 
@@ -381,7 +375,8 @@ def run(sourceType, path):
                 area = cv.contourArea(contour)
                 if area > 800:
                     # Yellow object found
-                    status = 'WAITING'          # Keep 'WAITING' status
+                    status = 'WAITING'          # Reset to 'WAITING' status
+                    result = None
                     counter = 0
                     x, y, w, h = cv.boundingRect(contour)
                     frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
@@ -413,15 +408,16 @@ def run(sourceType, path):
                 print(status)
                 if status == 'SUCCESS':
                     expression_str = "".join(predicted)
-
+                    result = utils.float_to_str(value)
                     # Print the result in the console
-                    print(expression_str + utils.float_to_str(value))
-
-                    # Show the result on the screen
-                    displayResult(frame, utils.float_to_str(value), equal_coordinates)
+                    print(expression_str + result)
 
                 elif status == 'ERROR':
                     print("Reason: " + value)
+
+        if status != 'ERROR' and result is not None:
+            # If available, print the result on the frame
+            frame = write_result(frame, result, equal_coordinates)
 
         # Show the processed frame to the user
         frame = write_status(frame, status)
