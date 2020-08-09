@@ -1,6 +1,5 @@
 import cv2 as cv
 import numpy as np
-import matplotlib.pyplot as plt
 import utils
 import multimedia
 import neuralnetwork as net
@@ -124,8 +123,15 @@ def clear_outliers(rectangles):
 
 def detect_symbols(image):
     """
-    TODO: write docstring
+    Runs image processing algorithms in order to detect symbols (digits and operators)
+    in the provided image, cropping each of them and returning them as a list
+    :param image: the image on which the detection has to be run
+    :return: a list of the detected symbols as cropped images (or None)
     """
+    if image is None:
+        return None
+
+    # 7x7 kernel for morphological operations
     kernel = np.array(
         [[0, 1, 1, 1, 1, 1, 0],
          [1, 1, 1, 1, 1, 1, 1],
@@ -137,33 +143,28 @@ def detect_symbols(image):
         np.uint8)
 
     # Convert image to gray and apply pre-processing
-    image_gray = utils.bgr_to_gray(image)
+    image_proc = utils.bgr_to_gray(image)
 
-    # Apply blur
-    image_gray = cv.GaussianBlur(image_gray, (9, 9), 0)
+    # Apply Gaussian blur
+    image_proc = cv.GaussianBlur(image_proc, (9, 9), 0)
 
-    # Apply thresholding
-    image_thresh = cv.adaptiveThreshold(image_gray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 9, 3)
+    # Apply image thresholding to separate handwriting from the background
+    image_proc = cv.adaptiveThreshold(image_proc, 255,
+                                      cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                      cv.THRESH_BINARY, 9, 3)
 
-    # Apply opening operators
-    image_thresh = cv.morphologyEx(image_thresh, cv.MORPH_OPEN, kernel)
-
-    # Debug
-    #cv.imshow('Thresholded image', image_thresh)
+    # Apply opening operator on the background (equals closing the foreground)
+    # in order to fill gaps in the contours and 'repair' small holes
+    image_proc = cv.morphologyEx(image_proc, cv.MORPH_OPEN, kernel)
 
     # Detect edges using Canny
-    threshold = 30
-    canny_output = cv.Canny(image_thresh, threshold, threshold * 2)
+    image_proc = cv.Canny(image_proc, 30, 60)
 
-    # Create the content of window
-    drawing = np.copy(image)
+    # Create a copy of the image to draw debug info
+    img_debug = np.copy(image)
 
     # Find contours
-    contours, hierarchy = cv.findContours(canny_output, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-
-    # Draw contours
-    # for i in range(len(contours)):
-    #     cv.drawContours(drawing, contours, i, (0, 255, 0))
+    (contours, _) = cv.findContours(image_proc, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
     old_rectangles = []
     rectangles = []
@@ -173,6 +174,7 @@ def detect_symbols(image):
         x, y, w, h = cv.boundingRect(contour)
         rectangles.append([x, y, x + w, y + h])
 
+    # (Iterate this procedure until convergence)
     while len(rectangles) != len(old_rectangles):
         old_rectangles = rectangles.copy()
         rectangles.clear()
@@ -198,12 +200,8 @@ def detect_symbols(image):
         start_point = (rect[0], rect[1])
         # Ending coordinate, represents the bottom right corner of rectangle
         end_point = (rect[2], rect[3])
-        # Blue color in BGR
-        color = (255, 0, 0)
-        # Line thickness of 2 px
-        thickness = 2
-        # Draw the rectangle around the letter
-        drawing = cv.rectangle(drawing, start_point, end_point, color, thickness)
+        # Draw the rectangle around the letter (with blue color)
+        img_debug = cv.rectangle(img_debug, start_point, end_point, (255, 0, 0), thickness=2)
         # Crop the element from the image
         elem = utils.crop(image, start_point, end_point)
         # Append all valid elements to those that have to be processed by the neural network
@@ -211,14 +209,11 @@ def detect_symbols(image):
         if elem is not None:
             symbols.append(utils.bgr_to_rgb(elem))
 
-    # Show everything in a window
-    cv.imwrite("./detected_rectangles.jpg", drawing)         # TODO: riga da rimuovere
+    # Output a visual representation of the detection results
+    cv.imwrite("./detected_rectangles.jpg", img_debug)          # TODO: riga da rimuovere
 
-    # Retrieve the coordinates of the "equal"
-    if rectangles:
-        equal_coordinates = rectangles[-1]
-    else:
-        equal_coordinates = []
+    # Retrieve the coordinates of the '=' (assumed to be the last symbol)
+    equal_coordinates = rectangles[-1] if rectangles else []
 
     # Return list of extracted symbols and the coordinates of the "equal"
     return symbols, equal_coordinates
@@ -247,7 +242,7 @@ def write_status(frame, status):
     # Write the 'STATUS: ' word in a grey colour
     (text_width, text_height), _ = cv.getTextSize('STATUS: ', font, scale, thickness)
     position = (0 + margin, text_height + margin)
-    frame = cv.putText(frame, 'STATUS: ', position, font, scale, (50, 50, 50), thickness, cv.LINE_AA)
+    frame = cv.putText(frame, 'STATUS:', position, font, scale, (50, 50, 50), thickness, cv.LINE_AA)
 
     # Determine the position of the status name based on the size of the text
     (_, text_height), _ = cv.getTextSize(status, font, scale, thickness)
@@ -396,8 +391,6 @@ def run(sourceType, path):
 
                 # Do the computation
                 (status, value) = calculator.compute(predicted)
-
-                status = 'SUCCESS'
 
                 # Show 'result' to the user
                 print(status)
