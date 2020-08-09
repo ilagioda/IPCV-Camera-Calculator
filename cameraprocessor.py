@@ -66,7 +66,7 @@ def try_blend(current, rectangles):
     return current
 
 
-def clear_outliers(rectangles, image):
+def clear_outliers(rectangles):
     """
     Employs a clustering technique to try and remove possible noise points from actual symbols
     :param rectangles: list of all detected symbols (including real ones and possible outliers)
@@ -99,7 +99,6 @@ def clear_outliers(rectangles, image):
 
         # If it has enough neighbours, it is marked as a core point
         if cnt >= threshold:
-            cv.circle(image, center, radius, (0, 255, 0))      # Debug
             core_points.append(center)
 
     # For all the rectangles that have not been marked as core points
@@ -112,17 +111,13 @@ def clear_outliers(rectangles, image):
                     # If it is close to atleast 1 core point, it is marked as a border point
                     if utils.point_distance(center, other_center) < radius:
                         is_border = True
-                        cv.circle(image, center, radius, (255, 0, 0))      # Debug
                         break
 
             # Remaining non-border points are considered outliers and therefore removed
             if not is_border:
-                cv.circle(image, center, radius, (0, 0, 255))      # Debug
                 del rectangles[i]
                 i -= 1
         i += 1
-
-    cv.imwrite("./circles.jpg", image)         # TODO: riga da rimuovere
 
     return rectangles
 
@@ -191,7 +186,7 @@ def detect_symbols(image):
             rectangles.append(rect)
 
     # Clear outliers from the detected list of rectangles
-    rectangles = clear_outliers(rectangles, np.copy(image))
+    rectangles = clear_outliers(rectangles)
 
     # Sort the rectangles from left to right as they appear in the frame
     rectangles.sort(key=lambda r: r[0])
