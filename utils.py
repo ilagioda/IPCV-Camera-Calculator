@@ -108,7 +108,7 @@ def float_to_str(value):
     :param value: the float value to be formatted
     :return: the formatted string representing the value
     """
-    return ('%.15f' % value).rstrip('0').rstrip('.')
+    return ('%.3f' % value).rstrip('0').rstrip('.')
 
 
 def rectangle_center(rectangle):
