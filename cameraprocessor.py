@@ -1,5 +1,10 @@
-import cv2 as cv
+"""
+Computer Vision-based module for processing a multimedia source (image or video)
+and detect in it all the potential symbols that make up an arithmetical expression
+"""
+
 import numpy as np
+import cv2 as cv
 import utils
 import multimedia
 import neuralnetwork as net
@@ -220,7 +225,42 @@ def detect_symbols(image):
     return symbols, equal_coordinates
 
 
-def write_status(frame, status):
+def detect_action(frame):
+    """
+    Detects the presence of hand-coloured objects in the image, or
+    any movement that might happen inside the frame, which are taken
+    as indicators that something is still going on (e.g. handwriting)
+    and therefore the program has to wait a little longer
+    :param frame: the image on which the detection algorithm has to be run
+    :return: a pair (frame, has_actions) with the modified frame and a boolean
+            that is True if some object or movement has been detected
+    """
+
+    # Convert the current frame in HSV (note: needed by cv.inRange())
+    img = utils.bgr_to_hsv(frame)
+
+    # TODO: implement more sophisticated technique for detecting movement
+    # Thresholding with the usage of a mask for detecting yellow objects
+    lower_yellow = np.array([20, 110, 110])
+    upper_yellow = np.array([40, 255, 255])
+    mask = cv.inRange(img, lower_yellow, upper_yellow)
+
+    # Find contours of yellow objects
+    (contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+    # Check the size of the detected yellow objects
+    if contours:
+        contours.sort(key=lambda c: cv.contourArea(c), reverse=True)
+        if cv.contourArea(contours[0]) > 100:           # Only look at the largest object
+            # Yellow object found
+            x, y, w, h = cv.boundingRect(contours[0])
+            frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
+            return frame, True
+
+    return frame, False
+
+
+def write_status(frame, status, counter=0):
     """
     Adds a text on the image (top-left corner is the standard), describing
     the current application status with different colors and parameters
@@ -252,6 +292,8 @@ def write_status(frame, status):
     # Choose specific text parameters for the current status
     if status == 'WAITING':
         color = (50, 190, 230)      # Yellow
+        if counter > 1:
+            status = ('WAITING (%d)' % counter)
     elif status == 'ERROR':
         color = (0, 0, 250)         # Red
     else:   # SUCCESS or FINISHED
@@ -316,7 +358,11 @@ def write_result(frame, result, equal_coords):
 
 def run(sourceType, path):
     """
-    TODO: docstring
+    Runs the actual Camera Calculator script, processing the input media source
+    (image, video or webcam) and solving any arithmetical expression that
+    it is able to detect inside the frame
+    :param sourceType: the type of input media {image, video, webcam}
+    :param path: the path to the input media
     """
 
     # Initialize the InputMedia and MediaPlayer (output) objects
@@ -326,17 +372,10 @@ def run(sourceType, path):
     # Status variables
     status = 'WAITING'
     result = None
-    counter = 0
-    stop_counter = 30
+    counter = 30
 
-    # Initialize the array that will contain the predicted symbols
-    predicted = []
-
-    while source.isOpened():
-
-        # Check if the program has been terminated by the user
-        if output.stopped():
-            break
+    # Loop through the entire input media, unless the program has been terminated by the user
+    while source.isOpened() and not output.stopped():
 
         # Get the current frame
         frame = source.read()
@@ -346,40 +385,24 @@ def run(sourceType, path):
 
         # Run handwriting detection for (live or recorded) video inputs
         if sourceType in ['video', 'webcam']:
+            frame, has_actions = detect_action(frame)
 
-            # Print cont
-            print("Cont: {}".format(counter))
-
-            # Convert the current frame in HSV (note: needed by cv.inRange())
-            img = utils.bgr_to_hsv(frame)
-
-            # Thresholding with the usage of a mask for detecting the yellow
-            lower_yellow = np.array([20, 110, 110])
-            upper_yellow = np.array([40, 255, 255])
-            mask = cv.inRange(img, lower_yellow, upper_yellow)
-
-            # Find contours of yellow objects
-            (contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-            flag = 0
-            for contour in contours:
-                flag = 1
-                area = cv.contourArea(contour)
-                if area > 800:
-                    # Yellow object found
-                    status = 'WAITING'          # Reset to 'WAITING' status
-                    result = None
-                    counter = 0
-                    x, y, w, h = cv.boundingRect(contour)
-                    frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
-            if flag == 0:
-                # Yellow object not found
-                counter += 1
+            if has_actions:
+                # Reset to 'WAITING' status
+                status = 'WAITING'
+                result = None
+                counter = 30
+            else:
+                # No object detected, keep decrementing the counter
+                counter -= 1
 
         # Check if it's time to run the detection algorithm on the current frame/image
-        if counter == stop_counter or sourceType == 'image':
+        if counter == 0 or sourceType == 'image':
             (symbols, equal_coordinates) = detect_symbols(frame)
 
             if symbols:
+                # Initialize the array for the predicted symbols
+                predicted = []
                 for s in symbols:
                     # Prepare the image (pre-processing)
                     prepared_symbol = net.prepare_image(s)
@@ -390,26 +413,29 @@ def run(sourceType, path):
                     # Build the math expression by appending the prediction to the array of symbols
                     predicted.append(predicted_symbol)
 
-                # Do the computation
-                (status, value) = calculator.compute(predicted)
+                # Do the computation (and catch all possible errors)
+                try:
+                    (status, value) = calculator.compute(predicted)
+                except Exception as err:
+                    status = 'ERROR'
+                    value = str(err)
 
-                # Show 'result' to the user
-                print(status)
+                # Show the outcome to the user
                 if status == 'SUCCESS':
                     expression_str = "".join(predicted)
                     result = utils.float_to_str(value)
                     # Print the result in the console
-                    print(expression_str + result)
+                    print(status + ": " + expression_str + result)
 
                 elif status == 'ERROR':
-                    print("Reason: " + value)
+                    print(status + ": " + value)
 
         if status != 'ERROR' and result is not None:
             # If available, print the result on the frame
             frame = write_result(frame, result, equal_coordinates)
 
         # Show the processed frame to the user
-        frame = write_status(frame, status)
+        frame = write_status(frame, status, counter)
         output.show(frame)
 
         # When working on an image, the program stops after the first iteration
