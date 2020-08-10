@@ -71,8 +71,8 @@ def clear_outliers(rectangles):
     :param rectangles: list of all detected symbols (including real ones and possible outliers)
     :return: the updated rectangles list, hopefully without outliers
     """
-    if not rectangles or len(rectangles) < 4:
-        return rectangles
+    if not rectangles:
+        return []
 
     # Get height and center point coordinates for each rectangle
     heights = list(map(lambda r: r[3]-r[1], rectangles))
@@ -80,8 +80,9 @@ def clear_outliers(rectangles):
 
     # Remove min and max height values before computing the mean,
     # in order to avoid extreme points that may be outliers
-    heights.remove(min(heights))
-    heights.remove(max(heights))
+    if len(heights) > 2:
+        heights.remove(min(heights))
+        heights.remove(max(heights))
 
     # Compute neighbourhood size based on average symbol height
     radius = np.uint(2.5 * (sum(heights) / len(heights)))
