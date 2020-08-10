@@ -17,7 +17,7 @@ from PIL import Image
 
 # Set of 'global' classifier variables
 NUM_CLASSES = 15
-NN_PATH = './preproc_augm_symbols_net.pth'
+NN_PATH = './NN.pth'
 LABELS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
           'div', 'equal', 'minus', 'mul', 'plus']
 
@@ -94,7 +94,7 @@ def predict_symbol(image_cv):
     net.classifier[6] = nn.Linear(4096, NUM_CLASSES)
 
     # Load the already-trained model
-    net.load_state_dict(torch.load(NN_PATH))
+    net.load_state_dict(torch.load(NN_PATH, map_location=torch.device('cpu')))
 
     # Set the evaluation mode
     net.eval()
