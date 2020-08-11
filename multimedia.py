@@ -59,7 +59,7 @@ class MediaPlayer:
         pressed ESC or closes the player window with the mouse
         """
 
-        factor = 1.15    # Playback slightly faster, to account for OS delays
+        factor = 1.1    # Playback slightly faster, to account for OS delays
 
         # Keep looping until the video source runs out of content
         while not (self.is_over and self.queue.empty()):
