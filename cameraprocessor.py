@@ -250,7 +250,7 @@ def detect_action(frame):
 
     # Check the size of the detected yellow objects
     if contours:
-        contours.sort(key=lambda c: cv.contourArea(c), reverse=True)
+        contours.sort(cv.contourArea, reverse=True)
         if cv.contourArea(contours[0]) > 100:           # Only look at the largest object
             # Yellow object found
             x, y, w, h = cv.boundingRect(contours[0])
@@ -405,13 +405,10 @@ def run(sourceType, path):
 
             if symbols:
 
-                # Initialize the array for the predicted symbols
-                predicted = []
-                for s in symbols:
-                    # Predict the class label (*)symbol) using a neural network
-                    # and build the math expression by appending it to an array of symbols
-                    predicted.append(net.predict_symbol(s))
-
+                # Build the math expression by creating an array of symbols
+                # obtained by predict the class label (symbol) using a neural network
+                predicted = list(map(net.predict_symbol, symbols))
+                
                 # Do the computation (and catch all possible errors)
                 try:
                     (status, value) = calculator.compute(predicted)
