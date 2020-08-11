@@ -250,7 +250,7 @@ def detect_action(frame):
 
     # Check the size of the detected yellow objects
     if contours:
-        contours.sort(cv.contourArea, reverse=True)
+        contours.sort(key=cv.contourArea, reverse=True)
         if cv.contourArea(contours[0]) > 100:           # Only look at the largest object
             # Yellow object found
             x, y, w, h = cv.boundingRect(contours[0])
