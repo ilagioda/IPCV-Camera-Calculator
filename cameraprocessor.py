@@ -369,6 +369,9 @@ def run(sourceType, path):
     source = multimedia.InputMedia(sourceType, path)
     output = multimedia.MediaPlayer(sourceType, source.framerate()).start()
 
+    # Initialize the classifier
+    net.init()
+
     # Status variables
     status = 'WAITING'
     result = None
@@ -401,17 +404,13 @@ def run(sourceType, path):
             (symbols, equal_coordinates) = detect_symbols(frame)
 
             if symbols:
+
                 # Initialize the array for the predicted symbols
                 predicted = []
                 for s in symbols:
-                    # Prepare the image (pre-processing)
-                    prepared_symbol = net.prepare_image(s)
-
-                    # Predict the class label using a neural network
-                    predicted_symbol = net.predict_symbol(prepared_symbol)
-
-                    # Build the math expression by appending the prediction to the array of symbols
-                    predicted.append(predicted_symbol)
+                    # Predict the class label (*)symbol) using a neural network
+                    # and build the math expression by appending it to an array of symbols
+                    predicted.append(net.predict_symbol(s))
 
                 # Do the computation (and catch all possible errors)
                 try:
