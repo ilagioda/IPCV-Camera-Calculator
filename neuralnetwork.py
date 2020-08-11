@@ -19,7 +19,7 @@ from PIL import Image
 NET = None
 NN_PATH = './NN.pth'
 SYMBOLS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '/', '=', '-', '*', '+']
-
+cont = 0                # TODO: riga da rimuovere
 
 def init():
     """
@@ -60,6 +60,10 @@ def predict_symbol(image_cv):
                                     cv.ADAPTIVE_THRESH_GAUSSIAN_C,
                                     cv.THRESH_BINARY, 15, 2)
 
+    global cont                                                     # TODO: riga da rimuovere
+    cv.imwrite("./aaa_primaDelPreproc"+str(cont)+".jpg", img_proc)     # TODO: riga da rimuovere
+
+
     # Define a kernel for morphological operations
     kernel = np.array(
         [[0, 1, 0],
@@ -85,6 +89,9 @@ def predict_symbol(image_cv):
     y_end = y_start + height
     x_end = x_start + width
     image[y_start:y_end, x_start:x_end] = img_proc
+
+    cv.imwrite("./aaa_primaDellaNN"+str(cont)+".jpg", image)        # TODO: riga da rimuovere
+    cont+=1                                                         # TODO: riga da rimuovere
 
     # Convert image into PIL format
     image = Image.fromarray(image).convert("RGB")

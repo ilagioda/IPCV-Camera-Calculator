@@ -216,7 +216,7 @@ def detect_symbols(image):
             symbols.append(utils.bgr_to_rgb(elem))
 
     # Output a visual representation of the detection results
-    cv.imwrite("./detected_rectangles.jpg", img_debug)          # TODO: riga da rimuovere
+    cv.imwrite("./aaa_detectedRectangles.jpg", img_debug)          # TODO: riga da rimuovere
 
     # Retrieve the coordinates of the '=' (assumed to be the last symbol)
     equal_coordinates = rectangles[-1] if rectangles else []
@@ -352,7 +352,7 @@ def write_result(frame, result, equal_coords):
     # Render text on the image (coordinates refer to the bottom left corner of the text area)
     frame = cv.putText(frame, result, coord, font, scale, color, thickness, cv.LINE_AA)
 
-    cv.imwrite("./result.jpg", frame)         # TODO: riga da rimuovere
+    cv.imwrite("./aaa_result.jpg", frame)         # TODO: riga da rimuovere
     return frame
 
 
