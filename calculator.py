@@ -98,4 +98,5 @@ def apply_operator(operator, expression):
             del expression[i+1]
             del expression[i]
 
-        i += 1      # Increment index
+        else:
+            i += 1      # Increment index
