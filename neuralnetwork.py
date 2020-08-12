@@ -55,6 +55,9 @@ def predict_symbol(image_cv):
     # Convert to grayscale for pre-processing
     img_proc = utils.rgb_to_gray(image_cv)
 
+    # Apply Gaussian blur
+    img_proc = cv.GaussianBlur(img_proc, (15, 15), 0)
+
     # Apply thresholding to the image, separating the background from the symbol
     img_proc = cv.adaptiveThreshold(img_proc, 255,
                                     cv.ADAPTIVE_THRESH_GAUSSIAN_C,
@@ -66,9 +69,8 @@ def predict_symbol(image_cv):
 
     # Define a kernel for morphological operations
     kernel = np.array(
-        [[0, 1, 0],
-         [1, 1, 1],
-         [0, 1, 0]],
+        [[1, 1],
+         [1, 1]],
         np.uint8)
 
     # Apply closing operator to remove noise
