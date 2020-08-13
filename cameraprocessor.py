@@ -203,9 +203,9 @@ def detect_symbols(image):
     symbols = []
     for rect in rectangles:
         # Start coordinate, represents the top left corner of rectangle
-        start_point = (rect[0], rect[1])
+        start_point = (max(rect[0]-1, 0), max(rect[1]-1, 0))
         # Ending coordinate, represents the bottom right corner of rectangle
-        end_point = (rect[2], rect[3])
+        end_point = (min(rect[2]+1, image.shape[1]), min(rect[3]+1, image.shape[0]))
         # Draw the rectangle around the letter (with blue color)
         img_debug = cv.rectangle(img_debug, start_point, end_point, (255, 0, 0), thickness=2)
         # Crop the element from the image
