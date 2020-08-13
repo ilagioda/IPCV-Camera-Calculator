@@ -66,17 +66,6 @@ def predict_symbol(image_cv):
     global cont                                                     # TODO: riga da rimuovere
     cv.imwrite("./aaa_primaDelPreproc"+str(cont)+".jpg", img_proc)     # TODO: riga da rimuovere
 
-    # Define a kernel for morphological operations
-    kernel = np.array(
-        [[1, 1],
-         [1, 1]],
-        np.uint8)
-
-    # Apply closing operator to remove noise
-    img_proc = cv.morphologyEx(img_proc, cv.MORPH_CLOSE, kernel)
-    # Apply opening operator to repair some gaps
-    img_proc = cv.morphologyEx(img_proc, cv.MORPH_OPEN, kernel)
-
     # Fit the image in a squared area with a 8px margin on each side (without resizing)
     height = image_cv.shape[0]
     width = image_cv.shape[1]
@@ -92,6 +81,17 @@ def predict_symbol(image_cv):
     y_end = y_start + height
     x_end = x_start + width
     image[y_start:y_end, x_start:x_end] = img_proc
+
+    # Define a kernel for morphological operations
+    kernel = np.array(
+        [[1, 1],
+         [1, 1]],
+        np.uint8)
+
+    # Apply closing operator to remove noise
+    img_proc = cv.morphologyEx(img_proc, cv.MORPH_CLOSE, kernel)
+    # Apply opening operator to repair some gaps
+    img_proc = cv.morphologyEx(img_proc, cv.MORPH_OPEN, kernel)
 
     cv.imwrite("./aaa_primaDellaNN"+str(cont)+".jpg", image)        # TODO: riga da rimuovere
     cont+=1                                                         # TODO: riga da rimuovere
