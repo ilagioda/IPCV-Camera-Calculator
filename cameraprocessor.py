@@ -293,7 +293,7 @@ def detect_action(frame, old_frame):
     if MSE > mse_threshold:
         return frame, True
 
-    
+
     # Thresholding with the usage of a mask for detecting yellow objects
     #lower_yellow = np.array([20, 110, 110])
     #upper_yellow = np.array([40, 255, 255])
@@ -405,8 +405,6 @@ def write_result(frame, result, equal_coords):
 
     # Render text on the image (coordinates refer to the bottom left corner of the text area)
     frame = cv.putText(frame, result, coord, font, scale, color, thickness, cv.LINE_AA)
-
-    cv.imwrite("./aaa_result.jpg", frame)         # TODO: riga da rimuovere
     return frame
 
 
@@ -498,7 +496,7 @@ def run(sourceType, path):
         # When working on an image, the program stops after the first iteration
         if sourceType == 'image':
             break
-        
+
         # Update the previous frame for the next iteration
         prev_frame = clean_frame
 

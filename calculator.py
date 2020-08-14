@@ -93,7 +93,7 @@ def apply_operators(operators, expression):
             elif operator == '/':
                 res = op1 / op2
             else:
-                raise Exception("apply_operator() should only be called with valid operators!") 
+                raise Exception("apply_operator() should only be called with valid operators!")
 
             # Replace the 3 items (op1, operator, op2) with the operation result
             expression[i-1] = res
