@@ -25,10 +25,7 @@ class MediaPlayer:
         :param framerate: for video types, the framerate at which it has to be played back
         :param queueSize: size of the video buffer, the larger the better (but uses more memory)
         """
-        if mediaType == 'webcam':
-            mediaType = 'video'
-
-        if mediaType not in ['image', 'video']:
+        if mediaType not in ['image', 'video', 'webcam']:
             raise ValueError("MediaPlayer only supports 'image', 'video' and 'webcam' types")
 
         self.type = mediaType
@@ -36,7 +33,7 @@ class MediaPlayer:
         self.is_stopped = False
         self.thread = None
 
-        if mediaType == 'video':
+        if mediaType in ['video', 'webcam']:
             # For playing back videos, a buffer and the framerate info are necessary
             self.rate = framerate
             self.queue = queue.Queue(maxsize=queueSize)
@@ -48,7 +45,7 @@ class MediaPlayer:
         will take care of showing frames from the buffer, at the specified rate.
         This function does nothing for an 'image' type MediaPlayer
         """
-        if self.type == 'video':
+        if self.type in ['video', 'webcam']:
             self.thread = Thread(target=self.update, args=(), daemon=False)
             self.thread.start()
         return self
@@ -62,7 +59,11 @@ class MediaPlayer:
         pressed ESC or closes the player window with the mouse
         """
 
-        factor = 1.1    # Playback slightly faster, to account for OS delays
+        if self.type == 'webcam':
+            pause = 1
+        elif self.type == 'video':
+            # Playback videos slightly faster, to account for OS delays
+            pause = int(1000/(1.1 * self.rate))
 
         # Keep looping until the video source runs out of content
         while not (self.is_over and self.queue.empty()):
@@ -75,11 +76,11 @@ class MediaPlayer:
                 frame = self.queue.get()
 
                 # And show it on the screen
-                cv.imshow('Video', frame)
+                cv.imshow('Video' if self.type == 'video' else 'Webcam', frame)
 
-                # Wait for the proper time (1000/(framerate * playbackSpeed) ms)
+                # Wait for some milliseconds to pause the video stream
                 # and also check if the user has pressed the ESC key to quit
-                if cv.waitKey(int(1000/(factor * self.rate))) & 0xFF == ord('\x1b'):
+                if cv.waitKey(pause) & 0xFF == ord('\x1b'):
                     self.stop()
                     sys.exit()
 
@@ -98,13 +99,13 @@ class MediaPlayer:
 
     def close(self):
         """
-        TODO: docstring
+        Close the MediaPlayer window, waiting for it's termination
         """
         if not self.is_stopped:
             self.stop()
 
         # Wait for the termination of the MediaPlayer thread
-        if self.type == 'video':
+        if self.type in ['video', 'webcam']:
             self.thread.join()
         elif self.type == 'image':
             # Wait for one last action by the user to close the window
@@ -131,7 +132,7 @@ class MediaPlayer:
             # Show the image on the GUI
             cv.imshow('Image', frame)
 
-        elif self.type == 'video':
+        elif self.type in ['video', 'webcam']:
             # Enqueue the frame in the buffer, with 1s timeouts in order to not get
             # stuck if the video player is closed while the main thread is sleeping
             done = False
