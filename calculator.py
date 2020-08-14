@@ -8,6 +8,11 @@ def compute(symbols):
     :param symbols: an array of *strings* with the symbols (digits and operators)
     :return: tuple containing the outcome (SUCCESS/ERROR) and the result or the error description
     """
+    if not symbols or len(symbols) == 0:
+        return ('ERROR', 'Empty expression')
+
+    # The last symbol of an expression must be the '=' sign
+    assert symbols[-1] == '=', "The expression must be terminated by '='"
 
     value = ""
     expression = []
@@ -51,10 +56,8 @@ def compute(symbols):
         i += 1      # Increment index
 
     # Apply all operations in the correct order
-    apply_operator('*', expression)
-    apply_operator('/', expression)
-    apply_operator('+', expression)
-    apply_operator('-', expression)
+    apply_operators(['*', '/'], expression)
+    apply_operators(['+', '-'], expression)
 
     # Make sure that the expression has been properly solved
     assert len(expression) == 2, "Unable to solve the expression"
@@ -63,23 +66,20 @@ def compute(symbols):
     return ('SUCCESS', result)
 
 
-def apply_operator(operator, expression):
+def apply_operators(operators, expression):
     """
-    Find all occurrences of an operator in the provided expression, and replace
+    Find all occurrences of the provided operators in the provided expression, and replace
     each one with the result obtained by applying the operation to the surrounding values
-    :param operator: a value between +, -, * and / which represents the operator to apply
+    :param operators: a list of values between +, -, * and / which are the operators to apply
     :param expression: list of math elements (numbers, operators) obtained after parsing
     :return: nothing, the expression list is modified by reference
     """
 
-    # Check that the provided operator is valid
-    if not operator in OPERATORS:
-        raise Exception("apply_operator() should only be called with valid operators!")
-
     i = 1
     while i < len(expression) - 1:
 
-        if expression[i] == operator:
+        if expression[i] in operators:
+            operator = expression[i]
             op1 = expression[i - 1]
             op2 = expression[i + 1]
 
@@ -92,6 +92,8 @@ def apply_operator(operator, expression):
                 res = op1 * op2
             elif operator == '/':
                 res = op1 / op2
+            else:
+                raise Exception("apply_operator() should only be called with valid operators!") 
 
             # Replace the 3 items (op1, operator, op2) with the operation result
             expression[i-1] = res
