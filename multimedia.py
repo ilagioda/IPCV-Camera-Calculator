@@ -60,8 +60,10 @@ class MediaPlayer:
         """
 
         if self.type == 'webcam':
+            window_name = 'Webcam'
             pause = 1
         elif self.type == 'video':
+            window_name = 'Video'
             # Playback videos slightly faster, to account for OS delays
             pause = int(1000/(1.1 * self.rate))
 
@@ -76,7 +78,7 @@ class MediaPlayer:
                 frame = self.queue.get()
 
                 # And show it on the screen
-                cv.imshow('Video' if self.type == 'video' else 'Webcam', frame)
+                cv.imshow(window_name, frame)
 
                 # Wait for some milliseconds to pause the video stream
                 # and also check if the user has pressed the ESC key to quit
@@ -85,7 +87,7 @@ class MediaPlayer:
                     sys.exit()
 
                 # Check if the window has been closed by the user
-                if cv.getWindowProperty('Video', cv.WND_PROP_VISIBLE) < 1:
+                if cv.getWindowProperty(window_name, cv.WND_PROP_VISIBLE) < 1:
                     self.stop()
                     sys.exit()
 
