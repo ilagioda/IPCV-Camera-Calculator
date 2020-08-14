@@ -57,7 +57,7 @@ def compute(symbols):
     apply_operator('-', expression)
 
     # Make sure that the expression has been properly solved
-    assert len(expression) == 2
+    assert len(expression) == 2, "Unable to solve the expression"
 
     result = expression[0]
     return ('SUCCESS', result)
