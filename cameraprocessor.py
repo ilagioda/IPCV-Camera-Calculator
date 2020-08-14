@@ -230,16 +230,28 @@ def detect_symbols(image):
     return symbols, equal_coordinates
 
 
-def detect_action(frame):
+def detect_action(frame, old_frame):
     """
     Detects the presence of hand-coloured objects in the image, or
     any movement that might happen inside the frame, which are taken
     as indicators that something is still going on (e.g. handwriting)
     and therefore the program has to wait a little longer
     :param frame: the image on which the detection algorithm has to be run
+    :param old_frame: the previous frame, used for movement detection
     :return: a pair (frame, has_actions) with the modified frame and a boolean
             that is True if some object or movement has been detected
     """
+    if frame is None or old_frame is None:
+        return None
+
+    mse_threshold = 10
+
+    # Compute Mean Squared Error (MSE) between current and previous frames
+    MSE = np.square(np.subtract(frame, old_frame)).mean()
+    print("MSE: {}".format(MSE))
+
+    if MSE > mse_threshold:
+        return frame, True
 
     # Convert the current frame in HSV (note: needed by cv.inRange())
     img = utils.bgr_to_hsv(frame)
@@ -381,6 +393,7 @@ def run(sourceType, path):
     status = 'WAITING'
     result = None
     counter = 30
+    prev_frame = None
 
     # Loop through the entire input media, unless the program has been terminated by the user
     while source.isOpened() and not output.stopped():
@@ -390,10 +403,16 @@ def run(sourceType, path):
         if frame is None:
             status = 'FINISHED'
             break
+        elif sourceType != 'image':
+            # Make a copy of the frame to use later
+            clean_frame = np.copy(frame)
+            # Special handling of the first frame
+            if prev_frame is None:
+                prev_frame = clean_frame
 
         # Run handwriting detection for (live or recorded) video inputs
         if sourceType in ['video', 'webcam']:
-            frame, has_actions = detect_action(frame)
+            frame, has_actions = detect_action(frame, prev_frame)
 
             if has_actions:
                 # Reset to 'WAITING' status
@@ -413,7 +432,7 @@ def run(sourceType, path):
                 # Build the math expression by creating an array of symbols
                 # obtained by predict the class label (symbol) using a neural network
                 predicted = list(map(net.predict_symbol, symbols))
-                
+
                 # Do the computation (and catch all possible errors)
                 try:
                     (status, value) = calculator.compute(predicted)
@@ -442,6 +461,9 @@ def run(sourceType, path):
         # When working on an image, the program stops after the first iteration
         if sourceType == 'image':
             break
+        
+        # Update the previous frame for the next iteration
+        prev_frame = clean_frame
 
     # Close the MediaPlayer output (waiting for its termination)
     output.signal_end()
