@@ -61,7 +61,7 @@ class MediaPlayer:
 
         if self.type == 'webcam':
             window_name = 'Webcam'
-            pause = 1
+            pause = int(1000/self.rate)
         elif self.type == 'video':
             window_name = 'Video'
             # Playback videos slightly faster, to account for OS delays
