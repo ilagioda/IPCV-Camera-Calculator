@@ -11,7 +11,7 @@ def main():
     provided by the user and initialize the camera-calculator accordingly
     """
     parser = argparse.ArgumentParser(
-        description='IPCV-Camera-Calculator\n\n\
+        description='[IPCV-Camera-Calculator]\n\
             A Computer Vision-based system for visually solving arithmetical expressions. It\
             works with pictures, pre-recorded videos or even live video streams (e.g. webcam).',
         epilog='The processing of a picture will happen istantaneously, while for either live\
@@ -24,7 +24,7 @@ def main():
                             (image, video or webcam)')
     parser.add_argument('-p', '--path', required=True,
                         help='The path of the input media that has to be processed\
-                            NOTE: for webcams, the path has to be an integer index (e.g. 1)')
+                            NOTE: for webcams, the path has to be an integer index (0, 1, ...)')
 
     args = parser.parse_args()
 

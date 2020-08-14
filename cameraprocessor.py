@@ -221,7 +221,7 @@ def detect_symbols(image):
             symbols.append(utils.bgr_to_rgb(elem))
 
     # Output a visual representation of the detection results
-    cv.imwrite("./aaa_detectedRectangles.jpg", img_debug)          # TODO: riga da rimuovere
+    cv.imwrite("./detectedRectangles.jpg", img_debug)          # TODO: riga da rimuovere
 
     # Retrieve the coordinates of the '=' (assumed to be the last symbol)
     equal_coordinates = rectangles[-1] if rectangles else []
@@ -288,7 +288,7 @@ def detect_action(frame, old_frame):
 
     # Compute Mean Squared Error (MSE) between current and previous frames
     MSE = np.square(np.subtract(blurred_frame, blurred_old_frame)).mean()
-    # print("MSE: {}".format(MSE))
+    # print("MSE: {}".format(MSE))               # TODO: riga da rimuovere
 
     if MSE > mse_threshold:
         return frame, True
