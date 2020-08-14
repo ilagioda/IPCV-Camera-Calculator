@@ -25,8 +25,11 @@ class MediaPlayer:
         :param framerate: for video types, the framerate at which it has to be played back
         :param queueSize: size of the video buffer, the larger the better (but uses more memory)
         """
+        if mediaType == 'webcam':
+            mediaType = 'video'
+
         if mediaType not in ['image', 'video']:
-            raise ValueError("MediaPlayer only supports 'image' and 'video' types")
+            raise ValueError("MediaPlayer only supports 'image', 'video' and 'webcam' types")
 
         self.type = mediaType
         self.is_over = False
