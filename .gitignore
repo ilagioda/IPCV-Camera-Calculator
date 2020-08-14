@@ -1,6 +1,6 @@
 # Custom folders
 video/phone-videos/
-./NNs/
+NNs/
 
 # VSCode project folders
 .vscode/
