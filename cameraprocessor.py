@@ -79,6 +79,9 @@ def clear_outliers(rectangles):
     if not rectangles:
         return []
 
+    # Delete rectangles that are too small to be significant
+    rectangles = list(filter(lambda r: r[3]-r[1] < 15 and r[2]-r[0] < 15, rectangles))
+
     # Get height and center point coordinates for each rectangle
     heights = list(map(lambda r: r[3]-r[1], rectangles))
     centers = list(map(utils.rectangle_center, rectangles))
