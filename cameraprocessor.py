@@ -244,35 +244,72 @@ def detect_action(frame, old_frame):
     if frame is None or old_frame is None:
         return None
 
-    mse_threshold = 10
+    # Convert the current frame in HSV (note: needed by cv.inRange())
+    img = utils.bgr_to_hsv(frame)
+
+    # Thresholding with the usage of a mask for detecting pink objects (hand)
+    lower_pink = np.array([0, 50, 80], dtype=np.uint8)
+    upper_pink = np.array([20, 255, 255], dtype=np.uint8)
+    mask = cv.inRange(img, lower_pink, upper_pink)
+
+    # Find contours of pink objects (hand)
+    (contours, _) = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # Check the size of the detected pink objects
+    if contours:
+
+        flag = False
+        min_x = frame.shape[1]
+        min_y = frame.shape[0]
+        max_x = 0
+        max_y = 0
+
+        for contour in contours:
+            if cv.contourArea(contour) > 50:           # Avoid too small objects (noise)
+                # Pink object found (hand)
+                x, y, w, h = cv.boundingRect(contour)
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                max_x = max(max_x, x + w)
+                max_y = max(max_y, y + h)
+                flag = True
+
+        if flag:
+            frame = cv.rectangle(frame, (min_x, min_y), (max_x, max_y), (255, 0, 0), 10)
+            return frame, True
+
+
+    # Movement detection
+    mse_threshold = 6
+
+    # Blur frames
+    blurred_frame = cv.GaussianBlur(frame, (15, 15), 0)
+    blurred_old_frame = cv.GaussianBlur(old_frame, (15, 15), 0)
 
     # Compute Mean Squared Error (MSE) between current and previous frames
-    MSE = np.square(np.subtract(frame, old_frame)).mean()
+    MSE = np.square(np.subtract(blurred_frame, blurred_old_frame)).mean()
     print("MSE: {}".format(MSE))
 
     if MSE > mse_threshold:
         return frame, True
 
-    # Convert the current frame in HSV (note: needed by cv.inRange())
-    img = utils.bgr_to_hsv(frame)
-
-    # TODO: implement more sophisticated technique for detecting movement
+    
     # Thresholding with the usage of a mask for detecting yellow objects
-    lower_yellow = np.array([20, 110, 110])
-    upper_yellow = np.array([40, 255, 255])
-    mask = cv.inRange(img, lower_yellow, upper_yellow)
+    #lower_yellow = np.array([20, 110, 110])
+    #upper_yellow = np.array([40, 255, 255])
+    #mask = cv.inRange(img, lower_yellow, upper_yellow)
 
     # Find contours of yellow objects
-    (contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    #(contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
     # Check the size of the detected yellow objects
-    if contours:
-        contours.sort(key=cv.contourArea, reverse=True)
-        if cv.contourArea(contours[0]) > 100:           # Only look at the largest object
+    #if contours:
+    #    contours.sort(key=cv.contourArea, reverse=True)
+    #    if cv.contourArea(contours[0]) > 100:           # Only look at the largest object
             # Yellow object found
-            x, y, w, h = cv.boundingRect(contours[0])
-            frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
-            return frame, True
+    #        x, y, w, h = cv.boundingRect(contours[0])
+    #        frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
+    #        return frame, True
 
     return frame, False
 
