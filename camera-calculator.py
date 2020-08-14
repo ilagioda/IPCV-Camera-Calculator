@@ -26,14 +26,16 @@ def main():
                         help='The path of the input media that has to be processed\
                             NOTE: for webcams, the path has to be an integer index (e.g. 1)')
 
-    args = parser.parse_args(['--type', 'video', '--path', './video/1+8.mp4'])
+    args = parser.parse_args()
 
     # Additional checks on argument correctness
     if args.type == 'webcam':
         try:
             args.path = int(args.path)
         except ValueError:
-            print("for webcams, the path has to be an integer index (e.g. 1)")
+            print("error: for webcams, the path has to be an integer index (0, 1, ...)")
+            sys.exit(-1)
+
 
     # Run the program with the parsed arguments
     cameraprocessor.run(args.type, args.path)
