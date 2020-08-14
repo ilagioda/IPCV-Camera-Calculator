@@ -248,7 +248,7 @@ def detect_action(frame, old_frame):
     img = utils.bgr_to_hsv(frame)
 
     # Thresholding with the usage of a mask for detecting pink objects (hand)
-    lower_pink = np.array([0, 50, 80], dtype=np.uint8)
+    lower_pink = np.array([0, 50, 100], dtype=np.uint8)
     upper_pink = np.array([20, 255, 255], dtype=np.uint8)
     mask = cv.inRange(img, lower_pink, upper_pink)
 
@@ -265,7 +265,7 @@ def detect_action(frame, old_frame):
         max_y = 0
 
         for contour in contours:
-            if cv.contourArea(contour) > 50:           # Avoid too small objects (noise)
+            if cv.contourArea(contour) > 100:           # Avoid too small objects (noise)
                 # Pink object found (hand)
                 x, y, w, h = cv.boundingRect(contour)
                 min_x = min(min_x, x)
@@ -280,7 +280,7 @@ def detect_action(frame, old_frame):
 
 
     # Movement detection
-    mse_threshold = 6
+    mse_threshold = 5
 
     # Blur frames
     blurred_frame = cv.GaussianBlur(frame, (15, 15), 0)
@@ -288,28 +288,10 @@ def detect_action(frame, old_frame):
 
     # Compute Mean Squared Error (MSE) between current and previous frames
     MSE = np.square(np.subtract(blurred_frame, blurred_old_frame)).mean()
-    print("MSE: {}".format(MSE))
+    # print("MSE: {}".format(MSE))
 
     if MSE > mse_threshold:
         return frame, True
-
-
-    # Thresholding with the usage of a mask for detecting yellow objects
-    #lower_yellow = np.array([20, 110, 110])
-    #upper_yellow = np.array([40, 255, 255])
-    #mask = cv.inRange(img, lower_yellow, upper_yellow)
-
-    # Find contours of yellow objects
-    #(contours, _) = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-
-    # Check the size of the detected yellow objects
-    #if contours:
-    #    contours.sort(key=cv.contourArea, reverse=True)
-    #    if cv.contourArea(contours[0]) > 100:           # Only look at the largest object
-            # Yellow object found
-    #        x, y, w, h = cv.boundingRect(contours[0])
-    #        frame = cv.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 10)
-    #        return frame, True
 
     return frame, False
 
@@ -427,7 +409,7 @@ def run(sourceType, path):
     # Status variables
     status = 'WAITING'
     result = None
-    counter = 30
+    counter = int(source.framerate() / 2)
     prev_frame = None
 
     # Loop through the entire input media, unless the program has been terminated by the user
@@ -453,7 +435,7 @@ def run(sourceType, path):
                 # Reset to 'WAITING' status
                 status = 'WAITING'
                 result = None
-                counter = 30
+                counter = int(source.framerate() / 2)
             else:
                 # No object detected, keep decrementing the counter
                 counter -= 1
