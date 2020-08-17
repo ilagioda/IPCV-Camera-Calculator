@@ -230,30 +230,47 @@ def detect_symbols(image):
     return symbols, equal_coordinates
 
 
-def detect_action(frame, old_frame):
+def detect_hand(frame):
     """
-    Detects the presence of hand-coloured objects in the image, or
-    any movement that might happen inside the frame, which are taken
-    as indicators that something is still going on (e.g. handwriting)
-    and therefore the program has to wait a little longer
+    Detects the presence of hand-coloured objects in the image, which
+    is taken as and indicators that handwriting is still going on and
+    therefore the program has to wait a little longer
     :param frame: the image on which the detection algorithm has to be run
-    :param old_frame: the previous frame, used for movement detection
-    :return: a pair (frame, has_actions) with the modified frame and a boolean
-            that is True if some object or movement has been detected
+    :return: a pair (frame, has_hand) with the modified frame and a boolean
+            that is True if some skin-colored object has been detected
     """
-    if frame is None or old_frame is None:
+    if frame is None:
         return None
 
     # Convert the current frame in HSV (note: needed by cv.inRange())
     img = utils.bgr_to_hsv(frame)
 
-    # Thresholding with the usage of a mask for detecting pink objects (hand)
-    lower_pink = np.array([0, 50, 100], dtype=np.uint8)
-    upper_pink = np.array([20, 255, 255], dtype=np.uint8)
-    mask = cv.inRange(img, lower_pink, upper_pink)
+    # Thresholding with the usage of a mask for detecting skin-colored objects (hand)
+    lower_skin = np.array([0, 48, 100], dtype=np.uint8)
+    upper_skin = np.array([20, 255, 255], dtype=np.uint8)
+    skin_mask = cv.inRange(img, lower_skin, upper_skin)
 
-    # Find contours of pink objects (hand)
-    (contours, _) = cv.findContours(mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    # Simple morphological operations to improve thresholding
+    kernel_3 = np.array(
+        [[0, 1, 0],
+         [1, 1, 1],
+         [0, 1, 0]],
+        np.uint8)
+
+    kernel_5 = np.array(
+        [[0, 1, 1, 1, 0],
+         [1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1],
+         [1, 1, 1, 1, 1],
+         [0, 1, 1, 1, 0]],
+        np.uint8)
+
+    skin_mask = cv.morphologyEx(skin_mask, cv.MORPH_CLOSE, kernel_5)
+    skin_mask = cv.morphologyEx(skin_mask, cv.MORPH_OPEN, kernel_3)
+
+
+    # Find contours of skin-colored objects
+    (contours, _) = cv.findContours(skin_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
     # Check the size of the detected pink objects
     if contours:
@@ -266,7 +283,7 @@ def detect_action(frame, old_frame):
 
         for contour in contours:
             if cv.contourArea(contour) > 100:           # Avoid too small objects (noise)
-                # Pink object found (hand)
+                # Skin-colored object found (hand)
                 x, y, w, h = cv.boundingRect(contour)
                 min_x = min(min_x, x)
                 min_y = min(min_y, y)
@@ -277,21 +294,6 @@ def detect_action(frame, old_frame):
         if flag:
             frame = cv.rectangle(frame, (min_x, min_y), (max_x, max_y), (255, 0, 0), 10)
             return frame, True
-
-
-    # Movement detection
-    mse_threshold = 5
-
-    # Blur frames
-    blurred_frame = cv.GaussianBlur(frame, (15, 15), 0)
-    blurred_old_frame = cv.GaussianBlur(old_frame, (15, 15), 0)
-
-    # Compute Mean Squared Error (MSE) between current and previous frames
-    MSE = np.square(np.subtract(blurred_frame, blurred_old_frame)).mean()
-    # print("MSE: {}".format(MSE))               # TODO: riga da rimuovere
-
-    if MSE > mse_threshold:
-        return frame, True
 
     return frame, False
 
@@ -409,8 +411,7 @@ def run(sourceType, path):
     # Status variables
     status = 'WAITING'
     result = None
-    counter = int(source.framerate() / 2)
-    prev_frame = None
+    counter = np.ceil(source.framerate() / 2)
 
     # Loop through the entire input media, unless the program has been terminated by the user
     while source.isOpened() and not output.stopped():
@@ -420,18 +421,12 @@ def run(sourceType, path):
         if frame is None:
             status = 'FINISHED'
             break
-        elif sourceType != 'image':
-            # Make a copy of the frame to use later
-            clean_frame = np.copy(frame)
-            # Special handling of the first frame
-            if prev_frame is None:
-                prev_frame = clean_frame
 
         # Run handwriting detection for (live or recorded) video inputs
         if sourceType in ['video', 'webcam']:
-            frame, has_actions = detect_action(frame, prev_frame)
+            frame, has_hand = detect_hand(frame)
 
-            if has_actions:
+            if has_hand:
                 # Reset to 'WAITING' status
                 status = 'WAITING'
                 result = None
@@ -478,9 +473,6 @@ def run(sourceType, path):
         # When working on an image, the program stops after the first iteration
         if sourceType == 'image':
             break
-
-        # Update the previous frame for the next iteration
-        prev_frame = clean_frame
 
     # Close the MediaPlayer output (waiting for its termination)
     output.signal_end()
