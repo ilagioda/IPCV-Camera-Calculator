@@ -1,4 +1,4 @@
 # IPCV-Camera-Calculator
 ## Progetto accademico ("tesina") del corso di Image Processing and Computer Vision del Politecnico di Torino
-L'obiettivo della tesina è realizzare una calcolatrice che, a partire da un flusso video pre-registrato o catturato in tempo reale (es. da una webcam) in cui è inquadrato un foglio di carta, permetta di rilevare cifre e simboli con il fine di effettuare operazioni matematiche elementari (+, -, *, /, ( )).<br>
+L'obiettivo della tesina è realizzare una calcolatrice che, a partire da un flusso video pre-registrato o catturato in tempo reale (es. da una webcam) in cui è inquadrato un foglio di carta, permetta di rilevare cifre e simboli con il fine di effettuare operazioni matematiche elementari (+, -, *, /).<br>
 Il sistema da implementare prevede una prima parte di pre-processing, nella quale viene identificato il momento in cui l'utente ha finito di scrivere e vengono localizzati ed isolati i simboli dell'espressione, seguita poi da un classificatore (rete neurale) in grado di identificare i numeri e gli operatori scritti dall'utente ed infine la calcolatrice vera e propria che effettua il parsing dell'espressione e la risolve.
