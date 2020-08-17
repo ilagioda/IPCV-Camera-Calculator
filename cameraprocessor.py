@@ -70,16 +70,22 @@ def try_blend(current, rectangles):
     return current
 
 
-def clear_outliers(rectangles):
+def clear_outliers(rectangles, image):
     """
     Employs a clustering technique to try and remove possible noise points from actual symbols
     :param rectangles: list of all detected symbols (including real ones and possible outliers)
+    :param image: the current frame, needed to draw visual output/debug information
     :return: the updated rectangles list, hopefully without outliers
     """
     if not rectangles:
         return []
 
     # Delete rectangles that are too small to be significant
+    # A red circle is drawn on the removed noise points for debugging purposes
+    for rect in rectangles:
+        if not (rect[3]-rect[1] > 15 or rect[2]-rect[0] > 15):
+            image = cv.circle(image, utils.rectangle_center(rect), 7, (0, 0, 255), thickness=2)
+
     rectangles = list(filter(lambda r: r[3]-r[1] > 15 or r[2]-r[0] > 15, rectangles))
     if len(rectangles) == 0:
         return []
@@ -125,6 +131,9 @@ def clear_outliers(rectangles):
 
             # Remaining non-border points are considered outliers and therefore removed
             if not is_border:
+                rect = rectangles[i]
+                size = max(rect[2]-rect[0], rect[3]-rect[1])
+                image = cv.circle(image, center, int(size * 0.6), (0, 0, 255), thickness=2)
                 del rectangles[i]
                 i -= 1
         i += 1
@@ -199,7 +208,7 @@ def detect_symbols(image):
             rectangles.append(rect)
 
     # Clear outliers from the detected list of rectangles
-    rectangles = clear_outliers(rectangles)
+    rectangles = clear_outliers(rectangles, img_debug)
 
     # Sort the rectangles from left to right as they appear in the frame
     rectangles.sort(key=lambda r: r[0])
@@ -221,7 +230,7 @@ def detect_symbols(image):
             symbols.append(utils.bgr_to_rgb(elem))
 
     # Output a visual representation of the detection results
-    cv.imwrite("./detectedRectangles.jpg", img_debug)          # TODO: riga da rimuovere
+    cv.imwrite("./detectionResults.jpg", img_debug)
 
     # Retrieve the coordinates of the '=' (assumed to be the last symbol)
     equal_coordinates = rectangles[-1] if rectangles else []
