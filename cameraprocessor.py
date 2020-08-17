@@ -412,7 +412,10 @@ def run(sourceType, path):
 
     # Initialize the InputMedia and MediaPlayer (output) objects
     source = multimedia.InputMedia(sourceType, path)
-    output = multimedia.MediaPlayer(sourceType, source.framerate()).start()
+    if source.isOpened():
+        output = multimedia.MediaPlayer(sourceType, source.framerate()).start()
+    else:
+        return
 
     # Initialize the classifier
     net.init()

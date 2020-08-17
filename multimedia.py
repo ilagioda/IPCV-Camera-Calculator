@@ -195,10 +195,17 @@ class InputMedia:
         self.type = mediaType
         self.closed = False
 
-        self.media = cv.imread(path) if mediaType == 'image' else cv.VideoCapture(path)
-        if self.media is None:
-            self.closed = True
-            raise RuntimeError("Cannot open " + mediaType + " " + str(path))
+        if mediaType == 'image':
+            self.media = cv.imread(path)
+            if self.media is None:
+                self.closed = True
+        else:
+            self.media = cv.VideoCapture(path)
+            if not self.media.isOpened():
+                self.closed = True
+        
+        if self.closed:
+            print("error: Cannot open " + mediaType + " " + str(path))
 
 
     def close(self):
