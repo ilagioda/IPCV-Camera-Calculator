@@ -1,7 +1,7 @@
 """A collection of utility functions"""
 
-import cv2 as cv
 import numpy as np
+import cv2 as cv
 
 
 def bgr_to_gray(image):
@@ -122,6 +122,20 @@ def rectangle_center(rectangle):
 
     return (np.int((rectangle[2] + rectangle[0]) / 2),
             np.int((rectangle[3] + rectangle[1]) / 2))
+
+
+def rectangle_data(rectangle):
+    """
+    Returns geometrical information about the rectangle
+    :param rectangle: the rectangle object in the form [min_x, min_y, max_x, max_y]
+    :return: (x, y, width, height) values (or None)
+    """
+    if not rectangle or len(rectangle) != 4:
+        return None
+
+    return (rectangle[0], rectangle[1],
+            rectangle[2]-rectangle[0],
+            rectangle[3]-rectangle[1])
 
 
 def point_distance(point_a, point_b):
