@@ -17,7 +17,7 @@ from PIL import Image
 
 # 'Global' classifier variables
 NET = None
-NN_PATH = './NN.pth'
+NN_PATH = './net/NN.pth'
 SYMBOLS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '/', '=', '-', '*', '+']
 
 def init():
