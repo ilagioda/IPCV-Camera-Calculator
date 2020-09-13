@@ -158,33 +158,32 @@ LR = 1e-2            # Initial Learning Rate
 # NUM_EPOCHS = 40      # Variation of the total number of training epochs
 NUM_EPOCHS = 50      # Other variation of the total number of training epochs
 
-#STEP_SIZE = 20       # How many epochs before decreasing learning rate (if using a step-down policy)
-STEP_SIZE = 30       # Variation of the step_size
+STEP_SIZE = 30       # How many epochs before decreasing learning rate (if using a step-down policy)
 
 """**Define Data Preprocessing**"""
 
 # # Define transforms for training phase (NO DATA AUGMENTATION)
-# data_transform = transforms.Compose([transforms.Resize(224),          # Resizes short size of the PIL image to 256
+# data_transform = transforms.Compose([transforms.Resize(224),          # Resizes short size of the PIL image to 224
 #                                       transforms.ToTensor(),          # Turn PIL Image to torch.Tensor
 #                                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # Normalizes tensor with mean and standard deviation
 # ])
 
 # # Define transforms for training phase (DATA AUGMENTATION - RandomRotation(10))
-# data_transform = transforms.Compose([transforms.Resize(224),          # Resizes short size of the PIL image to 256
+# data_transform = transforms.Compose([transforms.Resize(224),          # Resizes short size of the PIL image to 224
 #                                       transforms.RandomRotation(10),  # Rotate the image by a random angle
 #                                       transforms.ToTensor(),          # Turn PIL Image to torch.Tensor
 #                                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # Normalizes tensor with mean and standard deviation
 # ])
 
 # Define transforms for training phase (DATA AUGMENTATION - RandomRotation(15))
-data_transform = transforms.Compose([transforms.Resize(224),          # Resizes short size of the PIL image to 256
+data_transform = transforms.Compose([transforms.Resize(224),          # Resizes short size of the PIL image to 224
                                       transforms.RandomRotation(15),  # Rotate the image by a random angle
                                       transforms.ToTensor(),          # Turn PIL Image to torch.Tensor
                                       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # Normalizes tensor with mean and standard deviation
 ])
 
 # Define transforms for validation phase 
-eval_transform = transforms.Compose([transforms.Resize(224),      # Resizes short size of the PIL image to 256
+eval_transform = transforms.Compose([transforms.Resize(224),      # Resizes short size of the PIL image to 224
                                      transforms.ToTensor(),       # Turn PIL Image to torch.Tensor
                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # Normalizes tensor with mean and standard deviation
 ])
