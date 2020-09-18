@@ -312,14 +312,14 @@ def write_status(frame, status, counter=0):
     Adds a text on the image (top-left corner is the standard), describing
     the current application status with different colors and parameters
     :param frame: the BGR image on which the text has to be added
-    :param status: a string describing the status {WAITING, ERROR, SUCCESS, FINISHED}
+    :param status: a string describing the status {WAITING, ERROR, SUCCESS}
     :return: the frame with the status text on it (or None)
     """
     if frame is None:
         return None
 
-    if status not in {'WAITING', 'ERROR', 'SUCCESS', 'FINISHED'}:
-        raise ValueError("Status can only be one of {WAITING, ERROR, SUCCESS, FINISHED}")
+    if status not in {'WAITING', 'ERROR', 'SUCCESS'}:
+        raise ValueError("Status can only be one of {WAITING, ERROR, SUCCESS}")
 
     # Default text parameters
     font = cv.FONT_HERSHEY_DUPLEX
@@ -343,7 +343,7 @@ def write_status(frame, status, counter=0):
             status = ('WAITING (%d)' % counter)
     elif status == 'ERROR':
         color = (0, 0, 250)         # Red
-    else:   # SUCCESS or FINISHED
+    else:   # SUCCESS
         color = (0, 240, 0)         # Green
 
     return cv.putText(frame, status, position, font, scale, color, thickness, cv.LINE_AA)
@@ -431,7 +431,6 @@ def run(sourceType, path):
         # Get the current frame
         frame = source.read()
         if frame is None:
-            status = 'FINISHED'
             break
 
         # Run handwriting detection for (live or recorded) video inputs
