@@ -9,11 +9,11 @@ It is a computer-vision based application, written in Python and using the [Open
 2. [Usage](#Usage)
 3. [Project overview](#Project-overview)
 4. [Technical details](#Technical-details)
-   - [Hand detection](#Hand-detection-see-detecthand-in-cameraprocessorpy)
-   - [Symbols detection](#Symbols-detection-see-detectsymbols-in-cameraprocessorpy)
-   - [Noise removal](#Noise-removal-see-clearoutliers-in-cameraprocessorpy)
+   - [Hand detection](#Hand-detection-see-detect_hand-in-cameraprocessorpy)
+   - [Symbols detection](#Symbols-detection-see-detect_symbols-in-cameraprocessorpy)
+   - [Noise removal](#Noise-removal-see-clear_outliers-in-cameraprocessorpy)
    - [Neural network](#Neural-network-see-neuralnetworkpy)
-   - [Output](#Output-see-writestatus-and-writeresult-in-cameraprocessorpy)
+   - [Output](#Output-see-write_status-and-write_result-in-cameraprocessorpy)
 5. [Further development](#Further-development)
 
 # Install
